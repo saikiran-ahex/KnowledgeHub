@@ -21,6 +21,10 @@
 - Optional file upload is ad-hoc for that message.
 - Ad-hoc chat file is not permanently indexed.
 
+## UI Preview
+
+![Chat Screen](docs/images/chat-screen.png)
+
 ## Supported File Types
 
 - Documents: `.txt`, `.md`, `.pdf`, `.doc`, `.docx`, `.csv`

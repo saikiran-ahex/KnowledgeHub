@@ -1,10 +1,14 @@
 import { useMemo, useState, useRef, useEffect } from 'react';
+import { IoMicSharp } from "react-icons/io5";
+import { RiUploadCloud2Fill } from "react-icons/ri";
+import { TiAttachment } from "react-icons/ti";
 
 const API_BASE = '/api';
 const SUPPORTED = '.txt,.md,.pdf,.doc,.docx,.csv,.png,.jpg,.jpeg,.webp';
 const MAX_UPLOAD_SIZE_MB = 30;
 const IMAGE_MODELS = [
-  { value: 'gpt-5-mini', label: 'GPT-5 Mini' }
+  { value: 'gpt-5-mini', label: 'GPT-5 Mini' },
+  { value: 'gpt-4.1-mini', label: 'GPT-4.1 Mini' },
 ];
 
 const EXAMPLE_QUESTIONS = [
@@ -75,13 +79,97 @@ export default function App() {
   const [isRegister, setIsRegister] = useState(false);
   const [authError, setAuthError] = useState('');
 
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef(null);
+  const baseTranscriptRef = useRef('');
+  const pendingSendAfterListeningRef = useRef(false);
+
   const currentChat = chats.find((c) => c.id === activeChat) || chats[0];
   const history = currentChat.messages;
   const canSend = useMemo(() => question.trim().length > 1 && !busy, [question, busy]);
+  const isAdhocImage = useMemo(() => {
+    if (!file?.name) return false;
+    const lower = file.name.toLowerCase();
+    return ['.png', '.jpg', '.jpeg', '.webp'].some((ext) => lower.endsWith(ext));
+  }, [file]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [history]);
+
+  useEffect(() => {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = true;
+      recognitionRef.current.interimResults = true;
+      recognitionRef.current.lang = 'en-US';
+
+      recognitionRef.current.onresult = (event) => {
+        let interimTranscript = '';
+        let finalTranscript = '';
+
+        for (let i = 0; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscript += transcript + ' ';
+          } else {
+            interimTranscript += transcript;
+          }
+        }
+
+        if (finalTranscript) {
+          baseTranscriptRef.current += finalTranscript;
+          setQuestion(baseTranscriptRef.current);
+        } else {
+          setQuestion(baseTranscriptRef.current + interimTranscript);
+        }
+      };
+
+      recognitionRef.current.onerror = () => {
+        pendingSendAfterListeningRef.current = false;
+        setIsListening(false);
+      };
+
+      recognitionRef.current.onend = () => {
+        setIsListening(false);
+        if (pendingSendAfterListeningRef.current) {
+          pendingSendAfterListeningRef.current = false;
+          setTimeout(() => sendMessage(), 0);
+        }
+      };
+    }
+  }, []);
+
+  function toggleListening() {
+    if (!recognitionRef.current) {
+      alert('Speech recognition is not supported in your browser');
+      return;
+    }
+
+    if (isListening) {
+      pendingSendAfterListeningRef.current = false;
+      recognitionRef.current.stop();
+      setIsListening(false);
+    } else {
+      baseTranscriptRef.current = question;
+      recognitionRef.current.start();
+      setIsListening(true);
+    }
+  }
+
+  function handleKeyDown(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (isListening && recognitionRef.current) {
+        pendingSendAfterListeningRef.current = true;
+        recognitionRef.current.stop();
+        setIsListening(false);
+        return;
+      }
+      setTimeout(() => sendMessage(), 0);
+    }
+  }
 
   useEffect(() => {
     if (token && page === 'files') {
@@ -287,6 +375,7 @@ export default function App() {
     const q = question.trim();
     if (!q || !currentChat) return;
 
+    baseTranscriptRef.current = '';
     setBusy(true);
     setQuestion('');
 
@@ -327,6 +416,9 @@ export default function App() {
 
       if (file) {
         fd.append('file', file);
+        if (isAdhocImage && selectedImageModel) {
+          fd.append('image_model', selectedImageModel);
+        }
       }
 
       const res = await fetch(`${API_BASE}/chat`, {
@@ -444,9 +536,19 @@ export default function App() {
         <header className="header">
           <button className="menuBtn" onClick={() => setSidebarOpen(!sidebarOpen)}>menu</button>
           <h1>✨ KnowledgeHub</h1>
+          <select 
+            value={selectedImageModel} 
+            onChange={(e) => setSelectedImageModel(e.target.value)}
+            className="headerModelSelect"
+            title="Select Model"
+          >
+            {IMAGE_MODELS.map(model => (
+              <option key={model.value} value={model.value}>{model.label}</option>
+            ))}
+          </select>
           <div className="headerActions">
             <button className={`headerBtn ${page === 'index' ? 'active' : ''}`} onClick={() => setPage('index')}>
-              📤 Upload Files
+              <RiUploadCloud2Fill /> Upload Files
             </button>
             <button className={`headerBtn ${page === 'files' ? 'active' : ''}`} onClick={() => setPage('files')}>
               📂 My Files
@@ -493,30 +595,34 @@ export default function App() {
               {file ? <div className="fileChip">📎 {file.name} <button onClick={() => setFile(null)}>✕</button></div> : null}
               <div className="chatInput">
                 <label className="fileBtn">
-                  📎
+                  <TiAttachment />
                   <input type="file" accept={SUPPORTED} onChange={(e) => setFile(e.target.files?.[0] || null)} style={{ display: 'none' }} />
                 </label>
-                <select 
-                  value={selectedImageModel} 
-                  onChange={(e) => setSelectedImageModel(e.target.value)}
-                  className="imageModelSelect"
-                  title="Image Model"
+                <button 
+                  onClick={toggleListening} 
+                  className={`micBtn ${isListening ? 'listening' : ''}`}
+                  title="Voice input"
                 >
-                  {IMAGE_MODELS.map(model => (
-                    <option key={model.value} value={model.value}>{model.label}</option>
-                  ))}
-                </select>
+                  <IoMicSharp />
+                </button>
+                {isAdhocImage ? (
+                  <select
+                    value={selectedImageModel}
+                    onChange={(e) => setSelectedImageModel(e.target.value)}
+                    className="imageModelSelect"
+                    title="Image model for this ad-hoc image"
+                  >
+                    {IMAGE_MODELS.map((model) => (
+                      <option key={model.value} value={model.value}>{model.label}</option>
+                    ))}
+                  </select>
+                ) : null}
                 <textarea
                   rows={1}
-                  placeholder="Type your message..."
+                  placeholder={isListening ? 'Listening...' : 'Type your message...'}
                   value={question}
                   onChange={(e) => setQuestion(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      sendMessage();
-                    }
-                  }}
+                  onKeyDown={handleKeyDown}
                 />
                 <button onClick={sendMessage} disabled={!canSend} className="sendBtn">{busy ? '⏳' : '➤'}</button>
               </div>
@@ -608,4 +714,3 @@ export default function App() {
     </div>
   );
 }
-

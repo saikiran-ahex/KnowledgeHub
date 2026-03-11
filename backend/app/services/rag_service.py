@@ -508,7 +508,7 @@ class RagService:
         sources = list(source_scores.values())
         return self._strip_trailing_sources_block(str(answer.content)), sources
 
-    def _analyze_image_with_llm(self, image_path: Path, question: str) -> str:
+    def _analyze_image_with_llm(self, image_path: Path, question: str, image_model: str | None = None) -> str:
         mime = 'image/png'
         suffix = image_path.suffix.lower().lstrip('.')
         if suffix in {'jpg', 'jpeg'}:
@@ -519,7 +519,7 @@ class RagService:
         encoded = base64.b64encode(image_path.read_bytes()).decode('utf-8')
         image_url = f'data:{mime};base64,{encoded}'
         response = self.openai_client.chat.completions.create(
-            model=self.settings.openai_model,
+            model=image_model or self.settings.openai_model,
             messages=[
                 {
                     'role': 'system',
@@ -576,6 +576,7 @@ class RagService:
         self,
         question: str,
         file_path: Path,
+        image_model: str | None = None,
         top_k: int | None = None,
         history: list[dict] | None = None,
         filters: dict | None = None,
@@ -603,7 +604,7 @@ class RagService:
             logger.info('Ask-with-file retrieval elapsed_ms=%s', int((perf_counter() - retrieval_start) * 1000))
 
             if ext in IMAGE_EXTENSIONS:
-                vision_text = self._analyze_image_with_llm(file_path, question)
+                vision_text = self._analyze_image_with_llm(file_path, question, image_model=image_model)
                 if vision_text.strip():
                     file_docs.append(
                         Document(
@@ -651,6 +652,7 @@ class RagService:
     def chat(
         self,
         question: str,
+        image_model: str | None = None,
         top_k: int | None = None,
         history: list[dict] | None = None,
         file_path: Path | None = None,
@@ -658,7 +660,14 @@ class RagService:
     ) -> tuple[str, list[dict]]:
         # Chat upload is ad-hoc only and never indexed into persistent collections.
         if file_path is not None:
-            return self.ask_with_file(question=question, file_path=file_path, top_k=top_k, history=history, filters=filters)
+            return self.ask_with_file(
+                question=question,
+                file_path=file_path,
+                image_model=image_model,
+                top_k=top_k,
+                history=history,
+                filters=filters,
+            )
         return self.ask(question=question, top_k=top_k, history=history, filters=filters)
 
     def delete_by_doc_id(self, doc_id: str) -> int:

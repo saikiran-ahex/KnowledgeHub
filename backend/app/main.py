@@ -23,6 +23,7 @@ from app import database, auth
 setup_logging()
 logger = logging.getLogger(__name__)
 settings = get_settings()
+ALLOWED_ADHOC_IMAGE_MODELS = set(settings.adhoc_image_models)
 
 app = FastAPI(title=settings.app_name)
 
@@ -198,6 +199,7 @@ def ask(req: AskRequest, current_user: dict = Depends(get_current_user)) -> AskR
 async def ask_with_file(
     question: str = Form(...),
     file: UploadFile = File(...),
+    image_model: str | None = Form(default=None),
     top_k: int | None = Form(default=None),
     history_json: str | None = Form(default=None),
     filters_json: str | None = Form(default=None),
@@ -212,6 +214,8 @@ async def ask_with_file(
             status_code=400,
             detail=f'Unsupported file type. Supported: {sorted(SUPPORTED_EXTENSIONS)}',
         )
+    if ext in {'.png', '.jpg', '.jpeg', '.webp'} and image_model and image_model not in ALLOWED_ADHOC_IMAGE_MODELS:
+        raise HTTPException(status_code=400, detail=f'Unsupported image model. Allowed: {sorted(ALLOWED_ADHOC_IMAGE_MODELS)}')
 
     payload = await file.read()
     max_bytes = settings.max_upload_size_mb * 1024 * 1024
@@ -239,6 +243,7 @@ async def ask_with_file(
     answer, sources = get_rag_service().ask_with_file(
         question=question,
         file_path=output_path,
+        image_model=image_model,
         top_k=top_k,
         history=history,
         filters=filters,
@@ -252,6 +257,7 @@ async def ask_with_file(
 async def chat(
     question: str = Form(...),
     conversation_id: str | None = Form(default=None),
+    image_model: str | None = Form(default=None),
     top_k: int | None = Form(default=None),
     history_json: str | None = Form(default=None),
     filters_json: str | None = Form(default=None),
@@ -282,6 +288,8 @@ async def chat(
                 status_code=400,
                 detail=f'Unsupported file type. Supported: {sorted(SUPPORTED_EXTENSIONS)}',
             )
+        if ext in {'.png', '.jpg', '.jpeg', '.webp'} and image_model and image_model not in ALLOWED_ADHOC_IMAGE_MODELS:
+            raise HTTPException(status_code=400, detail=f'Unsupported image model. Allowed: {sorted(ALLOWED_ADHOC_IMAGE_MODELS)}')
         payload = await file.read()
         max_bytes = settings.max_upload_size_mb * 1024 * 1024
         if len(payload) > max_bytes:
@@ -300,6 +308,7 @@ async def chat(
 
     answer, sources = get_rag_service().chat(
         question=question,
+        image_model=image_model,
         top_k=top_k,
         history=history,
         file_path=file_path,

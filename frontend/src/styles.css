@@ -171,7 +171,30 @@ body { background: #000; color: #fff; height: 100vh; overflow: hidden; }
   transition: all 0.2s;
 }
 .menuBtn:hover { background: #222; }
-.header h1 { flex: 1; font-size: 24px; font-weight: 700; letter-spacing: -0.5px; background: linear-gradient(135deg, #fff 0%, #999 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.header h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; background: linear-gradient(135deg, #fff 0%, #999 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.headerModelSelect {
+  background: linear-gradient(135deg, #1a1a1a 0%, #151515 100%);
+  border: 1px solid #2a2a2a;
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: var(--shadow-sm);
+  margin-left: 16px;
+}
+.headerModelSelect:hover {
+  background: linear-gradient(135deg, #222 0%, #1a1a1a 100%);
+  border-color: #3a3a3a;
+}
+.headerModelSelect option { background: #2a2a2a; color: #fff; }
+.headerActions {
+  display: flex;
+  gap: 12px;
+  margin-left: auto;
+}
 
 .chatWindow {
   flex: 1;
@@ -328,6 +351,28 @@ body { background: #000; color: #fff; height: 100vh; overflow: hidden; }
   transition: all 0.2s;
 }
 .fileBtn:hover { color: #fff; background: #333; transform: scale(1.05); }
+.micBtn {
+  background: #2a2a2a;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  font-size: 20px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  border-radius: 10px;
+  transition: all 0.2s;
+}
+.micBtn:hover { color: #fff; background: #333; transform: scale(1.05); }
+.micBtn.listening {
+  background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);
+  color: #fff;
+  animation: pulse 1.5s infinite;
+}
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
 textarea {
   flex: 1;
   background: transparent;
@@ -361,12 +406,12 @@ textarea::placeholder { color: #666; }
   background: #2a2a2a;
   border: 1px solid #3a3a3a;
   color: #fff;
-  padding: 8px 12px;
+  padding: 8px 8px;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: 12px;
   cursor: pointer;
   transition: all 0.2s;
-  min-width: 120px;
+  min-width: 100px;
 }
 .imageModelSelect:hover { background: #333; }
 .imageModelSelect option { background: #2a2a2a; color: #fff; } 100%);

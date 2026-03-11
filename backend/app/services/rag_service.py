@@ -2,6 +2,7 @@ import json
 import logging
 import base64
 import hashlib
+import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from time import perf_counter
@@ -26,6 +27,9 @@ logger = logging.getLogger(__name__)
 
 
 class RagService:
+    _DOC_PREFIX_RE = re.compile(r'^[0-9a-f]{32}_(.+)$')
+    _TRAILING_SOURCES_RE = re.compile(r'\n*Sources used:\s*(?:\n\s*-\s*.+)+\s*$', re.IGNORECASE)
+
     def __init__(self) -> None:
         init_start = perf_counter()
         settings = get_settings()
@@ -156,7 +160,23 @@ class RagService:
         return deduped
 
     @staticmethod
-    def _build_qdrant_filter(filters: dict | None) -> qmodels.Filter | None:
+    def _source_name(file_path: Path, metadata: dict | None = None) -> str:
+        metadata = metadata or {}
+        raw = str(metadata.get('source') or file_path.name)
+        return RagService._normalize_source_name(raw)
+
+    @classmethod
+    def _normalize_source_name(cls, source_name: str) -> str:
+        normalized = source_name.removeprefix('chat_').removeprefix('adhoc_')
+        match = cls._DOC_PREFIX_RE.match(normalized)
+        return match.group(1) if match else normalized
+
+    @classmethod
+    def _strip_trailing_sources_block(cls, text: str) -> str:
+        return cls._TRAILING_SOURCES_RE.sub('', text).strip()
+
+    @staticmethod
+    def _build_qdrant_filter(filters: dict | None, *, metadata_prefix: str = '') -> qmodels.Filter | None:
         if not filters:
             return None
         must: list[qmodels.FieldCondition] = []
@@ -165,19 +185,35 @@ class RagService:
         file_type = filters.get('file_type')
         tags = filters.get('tags')
 
+        def field(name: str) -> str:
+            return f'{metadata_prefix}{name}' if metadata_prefix else name
+
         if owner_id:
-            must.append(qmodels.FieldCondition(key='owner_id', match=qmodels.MatchValue(value=str(owner_id))))
+            must.append(qmodels.FieldCondition(key=field('owner_id'), match=qmodels.MatchValue(value=str(owner_id))))
         if tenant_id:
-            must.append(qmodels.FieldCondition(key='tenant_id', match=qmodels.MatchValue(value=str(tenant_id))))
+            must.append(qmodels.FieldCondition(key=field('tenant_id'), match=qmodels.MatchValue(value=str(tenant_id))))
         if file_type:
-            must.append(qmodels.FieldCondition(key='file_type', match=qmodels.MatchValue(value=str(file_type))))
+            must.append(qmodels.FieldCondition(key=field('file_type'), match=qmodels.MatchValue(value=str(file_type))))
         if tags:
             for tag in tags:
-                must.append(qmodels.FieldCondition(key='tags', match=qmodels.MatchValue(value=str(tag))))
+                must.append(qmodels.FieldCondition(key=field('tags'), match=qmodels.MatchValue(value=str(tag))))
 
         if not must:
             return None
         return qmodels.Filter(must=must)
+
+    @staticmethod
+    def _payload_metadata(payload: dict | None) -> dict:
+        payload = payload or {}
+        nested = payload.get('metadata')
+        return nested if isinstance(nested, dict) else payload
+
+    @classmethod
+    def _payload_value(cls, payload: dict | None, key: str):
+        payload = payload or {}
+        if key in payload:
+            return payload.get(key)
+        return cls._payload_metadata(payload).get(key)
 
     @staticmethod
     def _auto_tags(text: str, source_name: str, max_tags: int = 8) -> list[str]:
@@ -206,15 +242,16 @@ class RagService:
         return tags
 
     def _ingest_image(self, file_path: Path, metadata: dict) -> int:
-        logger.info('Image ingest started source=%s', file_path.name)
+        source_name = self._source_name(file_path, metadata)
+        logger.info('Image ingest started source=%s', source_name)
         vector = self.clip_service.embed_image(file_path)
         point = qmodels.PointStruct(
             id=uuid4().hex,
             vector=vector,
             payload={
-                'source': file_path.name,
+                'source': source_name,
                 'type': 'image',
-                'text': f'Image file: {file_path.name}',
+                'text': f'Image file: {source_name}',
                 **metadata,
             },
         )
@@ -223,23 +260,24 @@ class RagService:
             points=[point],
             wait=True,
         )
-        logger.info('Image ingest completed source=%s', file_path.name)
+        logger.info('Image ingest completed source=%s', source_name)
         return 1
 
     def ingest_file(self, file_path: Path, metadata: dict | None = None, raw_bytes: bytes | None = None) -> int:
         ingest_start = perf_counter()
-        logger.info('Ingest started source=%s', file_path.name)
         metadata = dict(metadata or {})
+        source_name = self._source_name(file_path, metadata)
+        logger.info('Ingest started source=%s', source_name)
         if raw_bytes:
             metadata['content_hash'] = hashlib.sha256(raw_bytes).hexdigest()
 
         if file_path.suffix.lower() in IMAGE_EXTENSIONS:
             if not metadata.get('tags'):
-                metadata['tags'] = self._auto_tags('', file_path.name)
+                metadata['tags'] = self._auto_tags('', source_name)
             indexed = self._ingest_image(file_path, metadata)
             logger.info(
                 'Ingest completed source=%s chunks=%s elapsed_ms=%s',
-                file_path.name,
+                source_name,
                 indexed,
                 int((perf_counter() - ingest_start) * 1000),
             )
@@ -252,24 +290,24 @@ class RagService:
             overlap=self.settings.chunk_overlap,
         )
         if not chunks:
-            logger.info('Ingest completed source=%s chunks=0 elapsed_ms=%s', file_path.name, int((perf_counter() - ingest_start) * 1000))
+            logger.info('Ingest completed source=%s chunks=0 elapsed_ms=%s', source_name, int((perf_counter() - ingest_start) * 1000))
             return 0
 
         if not metadata.get('tags'):
-            metadata['tags'] = self._auto_tags(text, file_path.name)
+            metadata['tags'] = self._auto_tags(text, source_name)
 
         docs = []
         for idx, chunk in enumerate(chunks):
             chunk_meta = {
-                'source': file_path.name,
+                'source': source_name,
                 'type': 'text',
                 'chunk_id': f"{metadata.get('doc_id', file_path.stem)}:{idx}",
                 **metadata,
             }
             docs.append(Document(page_content=chunk, metadata=chunk_meta))
-        logger.info('Vector store add started source=%s docs=%s', file_path.name, len(docs))
+        logger.info('Vector store add started source=%s docs=%s', source_name, len(docs))
         self.vector_store.add_documents(docs)
-        logger.info('Ingest completed source=%s chunks=%s elapsed_ms=%s', file_path.name, len(docs), int((perf_counter() - ingest_start) * 1000))
+        logger.info('Ingest completed source=%s chunks=%s elapsed_ms=%s', source_name, len(docs), int((perf_counter() - ingest_start) * 1000))
         return len(docs)
 
     def _retrieve_image_candidates(self, queries: list[str], k: int, filters: dict | None = None) -> list[Document]:
@@ -289,7 +327,7 @@ class RagService:
             found: list[Document] = []
             for point in results:
                 payload = point.payload or {}
-                source = str(payload.get('source', 'unknown'))
+                source = self._normalize_source_name(str(payload.get('source', 'unknown')))
                 found.append(
                     Document(
                         page_content=f"Image match from {source}. Similarity score: {float(point.score or 0.0):.4f}",
@@ -320,11 +358,12 @@ class RagService:
 
     def _add_ephemeral_image_point(self, file_path: Path) -> str:
         point_id = str(uuid4())
+        source_name = file_path.name.removeprefix('chat_').removeprefix('adhoc_')
         vector = self.clip_service.embed_image(file_path)
         payload = {
-            'source': file_path.name,
+            'source': source_name,
             'type': 'image',
-            'text': f'Ephemeral ad-hoc image: {file_path.name}',
+            'text': f'Ephemeral ad-hoc image: {source_name}',
             'doc_id': f'ephemeral:{point_id}',
             'chunk_id': f'{point_id}:0',
             'owner_id': None,
@@ -332,7 +371,7 @@ class RagService:
             'uploaded_at': None,
             'file_type': file_path.suffix.lstrip('.'),
             'content_hash': None,
-            'tags': self._auto_tags('', file_path.name),
+            'tags': self._auto_tags('', source_name),
             'page_no': None,
             'ephemeral': True,
         }
@@ -341,7 +380,7 @@ class RagService:
             points=[qmodels.PointStruct(id=point_id, vector=vector, payload=payload)],
             wait=True,
         )
-        logger.info('Ephemeral image indexed point_id=%s source=%s', point_id, file_path.name)
+        logger.info('Ephemeral image indexed point_id=%s source=%s', point_id, source_name)
         return point_id
 
     def _remove_ephemeral_image_point(self, point_id: str) -> None:
@@ -356,7 +395,7 @@ class RagService:
             logger.warning('Failed to remove ephemeral image point_id=%s error=%s', point_id, exc)
 
     def _retrieve_candidates(self, queries: list[str], retrieve_k: int, filters: dict | None = None) -> list[Document]:
-        qdrant_filter = self._build_qdrant_filter(filters)
+        qdrant_filter = self._build_qdrant_filter(filters, metadata_prefix='metadata.')
         text_candidates: list[Document] = []
 
         embedding_start = perf_counter()
@@ -380,22 +419,24 @@ class RagService:
             found: list[Document] = []
             for point in points:
                 payload = point.payload or {}
+                metadata = self._payload_metadata(payload)
+                source = self._normalize_source_name(str(self._payload_value(payload, 'source') or 'unknown'))
                 found.append(
                     Document(
-                        page_content=str(payload.get('page_content', payload.get('text', ''))),
+                        page_content=str(payload.get('page_content', payload.get('text', metadata.get('text', '')))),
                         metadata={
-                            'source': payload.get('source'),
-                            'type': payload.get('type'),
+                            'source': source,
+                            'type': self._payload_value(payload, 'type'),
                             'score': float(point.score or 0.0),
-                            'doc_id': payload.get('doc_id'),
-                            'chunk_id': payload.get('chunk_id'),
-                            'owner_id': payload.get('owner_id'),
-                            'tenant_id': payload.get('tenant_id'),
-                            'uploaded_at': payload.get('uploaded_at'),
-                            'file_type': payload.get('file_type'),
-                            'page_no': payload.get('page_no'),
-                            'content_hash': payload.get('content_hash'),
-                            'tags': payload.get('tags'),
+                            'doc_id': self._payload_value(payload, 'doc_id'),
+                            'chunk_id': self._payload_value(payload, 'chunk_id'),
+                            'owner_id': self._payload_value(payload, 'owner_id'),
+                            'tenant_id': self._payload_value(payload, 'tenant_id'),
+                            'uploaded_at': self._payload_value(payload, 'uploaded_at'),
+                            'file_type': self._payload_value(payload, 'file_type'),
+                            'page_no': self._payload_value(payload, 'page_no'),
+                            'content_hash': self._payload_value(payload, 'content_hash'),
+                            'tags': self._payload_value(payload, 'tags'),
                         },
                     )
                 )
@@ -435,7 +476,7 @@ class RagService:
                 ),
                 (
                     'human',
-                    'Conversation history:\n{history}\n\nQuestion:\n{question}\n\nContext:\n{context}\n\nAnswer directly and end with sources used.',
+                    'Conversation history:\n{history}\n\nQuestion:\n{question}\n\nContext:\n{context}\n\nAnswer directly. Do not add a sources section.',
                 ),
             ]
         )
@@ -445,7 +486,7 @@ class RagService:
         source_scores: dict[str, dict] = {}
         total = max(len(selected_docs), 1)
         for rank, doc in enumerate(selected_docs, start=1):
-            source = str(doc.metadata.get('source', 'unknown'))
+            source = self._normalize_source_name(str(doc.metadata.get('source', 'unknown')))
             score = float(total - rank + 1) / float(total)
             existing = source_scores.get(source)
             if existing is None or score > float(existing.get('score', 0.0)):
@@ -465,7 +506,7 @@ class RagService:
                 }
 
         sources = list(source_scores.values())
-        return str(answer.content), sources
+        return self._strip_trailing_sources_block(str(answer.content)), sources
 
     def _analyze_image_with_llm(self, image_path: Path, question: str) -> str:
         mime = 'image/png'
@@ -541,6 +582,7 @@ class RagService:
     ) -> tuple[str, list[dict]]:
         ask_start = perf_counter()
         logger.info('Ask-with-file started question_len=%s file=%s', len(question), file_path.name)
+        source_name = file_path.name.removeprefix('chat_').removeprefix('adhoc_')
 
         retrieve_k = top_k or self.settings.retrieval_top_k
         expand_start = perf_counter()
@@ -566,7 +608,7 @@ class RagService:
                     file_docs.append(
                         Document(
                             page_content=vision_text,
-                            metadata={'source': file_path.name, 'type': 'image_vision', 'file_type': file_path.suffix.lstrip('.')},
+                            metadata={'source': source_name, 'type': 'image_vision', 'file_type': file_path.suffix.lstrip('.')},
                         )
                     )
                     logger.info('Ask-with-file image analysis completed file=%s chars=%s', file_path.name, len(vision_text))
@@ -578,7 +620,7 @@ class RagService:
                         Document(
                             page_content=chunk,
                             metadata={
-                                'source': file_path.name,
+                                'source': source_name,
                                 'type': 'ad_hoc_file',
                                 'file_type': file_path.suffix.lstrip('.'),
                                 'chunk_id': f'adhoc:{idx}',
@@ -630,7 +672,10 @@ class RagService:
                 collection_name=self.settings.qdrant_collection,
                 points_selector=qmodels.FilterSelector(
                     filter=qmodels.Filter(
-                        must=[qmodels.FieldCondition(key='doc_id', match=qmodels.MatchValue(value=doc_id))]
+                        should=[
+                            qmodels.FieldCondition(key='doc_id', match=qmodels.MatchValue(value=doc_id)),
+                            qmodels.FieldCondition(key='metadata.doc_id', match=qmodels.MatchValue(value=doc_id)),
+                        ]
                     )
                 ),
                 wait=True,
@@ -658,3 +703,61 @@ class RagService:
         
         logger.info('Delete by doc_id completed doc_id=%s collections=%s', doc_id, deleted_count)
         return deleted_count
+
+    def _scroll_doc_ids(self, collection_name: str, owner_id: str, *, metadata_prefix: str = '') -> set[str]:
+        doc_ids: set[str] = set()
+        scroll_filter = self._build_qdrant_filter({'owner_id': owner_id}, metadata_prefix=metadata_prefix)
+        offset = None
+
+        while True:
+            points, next_offset = self.qdrant_client.scroll(
+                collection_name=collection_name,
+                scroll_filter=scroll_filter,
+                with_payload=True,
+                with_vectors=False,
+                limit=256,
+                offset=offset,
+            )
+            for point in points:
+                payload = point.payload or {}
+                doc_id = self._payload_value(payload, 'doc_id')
+                if doc_id:
+                    doc_ids.add(str(doc_id))
+            if next_offset is None:
+                break
+            offset = next_offset
+
+        return doc_ids
+
+    def cleanup_user_vectors(self, owner_id: str, valid_doc_ids: set[str]) -> dict:
+        owner_id = str(owner_id)
+        logger.info('User vector cleanup started owner_id=%s valid_doc_ids=%s', owner_id, len(valid_doc_ids))
+
+        text_doc_ids = self._scroll_doc_ids(
+            self.settings.qdrant_collection,
+            owner_id,
+            metadata_prefix='metadata.',
+        )
+        image_doc_ids = self._scroll_doc_ids(
+            self.settings.qdrant_image_collection,
+            owner_id,
+        )
+
+        text_to_remove = sorted(doc_id for doc_id in text_doc_ids if doc_id not in valid_doc_ids)
+        image_to_remove = sorted(doc_id for doc_id in image_doc_ids if doc_id not in valid_doc_ids)
+
+        for doc_id in sorted(set(text_to_remove + image_to_remove)):
+            self.delete_by_doc_id(doc_id)
+
+        logger.info(
+            'User vector cleanup completed owner_id=%s text_removed=%s image_removed=%s',
+            owner_id,
+            len(text_to_remove),
+            len(image_to_remove),
+        )
+        return {
+            'success': True,
+            'message': f'Removed {len(set(text_to_remove + image_to_remove))} orphaned document vector sets.',
+            'text_doc_ids_removed': text_to_remove,
+            'image_doc_ids_removed': image_to_remove,
+        }

@@ -14,6 +14,9 @@ const EXAMPLE_QUESTIONS = [
   "Explain the technical details"
 ];
 
+const DEFAULT_CHAT = { id: 'draft', title: 'New Chat', messages: [], isDraft: true };
+const DEFAULT_CHATS = [DEFAULT_CHAT];
+
 async function readApiResponse(res) {
   const contentType = res.headers.get('content-type') || '';
   if (contentType.includes('application/json')) return res.json();
@@ -49,8 +52,8 @@ export default function App() {
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [username, setUsername] = useState(localStorage.getItem('username') || '');
   const [page, setPage] = useState('chat');
-  const [chats, setChats] = useState([{ id: 1, title: 'New Chat', messages: [] }]);
-  const [activeChat, setActiveChat] = useState(1);
+  const [chats, setChats] = useState(DEFAULT_CHATS);
+  const [activeChat, setActiveChat] = useState(DEFAULT_CHAT.id);
   const [question, setQuestion] = useState('');
   const [busy, setBusy] = useState(false);
   const [file, setFile] = useState(null);
@@ -64,6 +67,8 @@ export default function App() {
 
   const [userFiles, setUserFiles] = useState([]);
   const [filesLoading, setFilesLoading] = useState(false);
+  const [cleanupBusy, setCleanupBusy] = useState(false);
+  const [cleanupMessage, setCleanupMessage] = useState('');
 
   const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -84,13 +89,22 @@ export default function App() {
     }
   }, [token, page]);
 
+  useEffect(() => {
+    if (!token) {
+      setChats(DEFAULT_CHATS);
+      setActiveChat(DEFAULT_CHAT.id);
+      return;
+    }
+    loadConversations();
+  }, [token]);
+
   function logout() {
     localStorage.removeItem('token');
     localStorage.removeItem('username');
     setToken(null);
     setUsername('');
-    setChats([{ id: 1, title: 'New Chat', messages: [] }]);
-    setActiveChat(1);
+    setChats(DEFAULT_CHATS);
+    setActiveChat(DEFAULT_CHAT.id);
   }
 
   async function handleAuth() {
@@ -132,6 +146,60 @@ export default function App() {
     }
   }
 
+  async function cleanupVectors() {
+    setCleanupBusy(true);
+    setCleanupMessage('');
+    try {
+      const res = await fetch(`${API_BASE}/files/cleanup-vectors`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await readApiResponse(res);
+      if (!res.ok) throw new Error(data.detail || 'Failed to clean vectors');
+      const removedCount = new Set([
+        ...(data.text_doc_ids_removed || []),
+        ...(data.image_doc_ids_removed || []),
+      ]).size;
+      setCleanupMessage(
+        removedCount > 0
+          ? `Removed ${removedCount} orphaned vector set${removedCount === 1 ? '' : 's'}.`
+          : 'No orphaned vectors found.'
+      );
+      await loadUserFiles();
+    } catch (err) {
+      setCleanupMessage(`Cleanup failed: ${String(err.message || err)}`);
+    } finally {
+      setCleanupBusy(false);
+    }
+  }
+
+  async function loadConversations() {
+    try {
+      const res = await fetch(`${API_BASE}/conversations`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await readApiResponse(res);
+      if (!res.ok) throw new Error(data.detail || 'Failed to load conversations');
+      const items = Array.isArray(data) && data.length ? data : DEFAULT_CHATS;
+      setChats(items);
+      setActiveChat((prev) => (items.some((chat) => chat.id === prev) ? prev : items[0].id));
+    } catch (err) {
+      console.error('Failed to load conversations:', err);
+      setChats(DEFAULT_CHATS);
+      setActiveChat(DEFAULT_CHAT.id);
+    }
+  }
+
+  async function createConversation() {
+    const res = await fetch(`${API_BASE}/conversations`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await readApiResponse(res);
+    if (!res.ok) throw new Error(data.detail || 'Failed to create conversation');
+    return data.conversation;
+  }
+
   async function deleteUserFile(fileId) {
     if (!confirm('Delete this file and all its vectors?')) return;
     try {
@@ -147,18 +215,40 @@ export default function App() {
     }
   }
 
-  function newChat() {
-    const newId = Math.max(...chats.map((c) => c.id)) + 1;
-    setChats([...chats, { id: newId, title: 'New Chat', messages: [] }]);
-    setActiveChat(newId);
+  async function newChat() {
+    try {
+      const conversation = await createConversation();
+      setChats((prev) => [conversation, ...prev.filter((chat) => !chat.isDraft)]);
+      setActiveChat(conversation.id);
+    } catch (err) {
+      console.error('Failed to create conversation:', err);
+      setChats((prev) => (prev.some((chat) => chat.isDraft) ? prev : [DEFAULT_CHAT, ...prev]));
+      setActiveChat(DEFAULT_CHAT.id);
+    }
     setPage('chat');
   }
 
-  function deleteChat(id) {
+  async function deleteChat(id) {
+    const chatToDelete = chats.find((chat) => chat.id === id);
     if (chats.length === 1) return;
+    if (chatToDelete && !chatToDelete.isDraft) {
+      try {
+        const res = await fetch(`${API_BASE}/conversations/${id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await readApiResponse(res);
+        if (!res.ok) throw new Error(data.detail || 'Failed to delete conversation');
+      } catch (err) {
+        alert(`Error: ${err.message || err}`);
+        return;
+      }
+    }
+
     const filtered = chats.filter((c) => c.id !== id);
-    setChats(filtered);
-    if (activeChat === id) setActiveChat(filtered[0].id);
+    const nextChats = filtered.length ? filtered : DEFAULT_CHATS;
+    setChats(nextChats);
+    if (activeChat === id) setActiveChat(nextChats[0].id);
   }
 
   async function uploadFile(f, idx) {
@@ -195,13 +285,14 @@ export default function App() {
 
   async function sendMessage() {
     const q = question.trim();
-    if (!q) return;
+    if (!q || !currentChat) return;
 
     setBusy(true);
     setQuestion('');
 
     const userMsg = { role: 'user', content: file ? `${q} (file: ${file.name})` : q };
     const historyForApi = history.map((m) => ({ role: m.role, content: m.content }));
+    let targetConversationId = currentChat.id;
 
     setChats((prev) =>
       prev.map((c) =>
@@ -216,8 +307,22 @@ export default function App() {
     );
 
     try {
+      if (currentChat.isDraft) {
+        const conversation = await createConversation();
+        targetConversationId = conversation.id;
+        setChats((prev) =>
+          prev.map((c) =>
+            c.id === activeChat
+              ? { ...conversation, messages: c.messages }
+              : c
+          )
+        );
+        setActiveChat(conversation.id);
+      }
+
       const fd = new FormData();
       fd.append('question', q);
+      fd.append('conversation_id', targetConversationId);
       fd.append('history_json', JSON.stringify(historyForApi));
 
       if (file) {
@@ -234,8 +339,14 @@ export default function App() {
 
       setChats((prev) =>
         prev.map((c) =>
-          c.id === activeChat
-            ? { ...c, messages: [...c.messages, { role: 'assistant', content: data.answer, sources: data.sources || [] }] }
+          c.id === targetConversationId
+            ? {
+                ...c,
+                id: data.conversation_id || c.id,
+                isDraft: false,
+                title: c.title === 'New Chat' ? q.slice(0, 30) : c.title,
+                messages: [...c.messages, { role: 'assistant', content: data.answer, sources: data.sources || [] }],
+              }
             : c
         )
       );
@@ -243,7 +354,7 @@ export default function App() {
     } catch (err) {
       setChats((prev) =>
         prev.map((c) =>
-          c.id === activeChat
+          c.id === targetConversationId || (currentChat.isDraft && c.id === activeChat)
             ? { ...c, messages: [...c.messages, { role: 'assistant', content: `Error: ${String(err.message || err)}`, sources: [] }] }
             : c
         )
@@ -309,9 +420,9 @@ export default function App() {
             >
               <span className="chatTitle">{chat.title}</span>
               <button
-                onClick={(e) => {
+                onClick={async (e) => {
                   e.stopPropagation();
-                  deleteChat(chat.id);
+                  await deleteChat(chat.id);
                 }}
                 className="deleteBtn"
               >
@@ -432,10 +543,26 @@ export default function App() {
               </button>
 
               {indexResult.length > 0 ? (
-                <div className="result">
+                <div className="uploadResults">
                   {indexResult.map((row, idx) => (
-                    <div key={idx} className="resultItem">
-                      {row.error ? `ERROR ${row.error}` : `OK ${row.filename}: ${row.chunks_indexed} chunks (doc_id=${row.doc_id || '-'})`}
+                    <div key={idx} className={`uploadResultItem ${row.error ? 'error' : 'success'}`}>
+                      <div className="resultIcon">
+                        {row.error ? '❌' : '✅'}
+                      </div>
+                      <div className="resultContent">
+                        <div className="resultTitle">
+                          {row.error ? 'Upload Failed' : 'Successfully Uploaded'}
+                        </div>
+                        <div className="resultDetails">
+                          {row.error 
+                            ? `${row.filename || 'File'}: ${row.error}`
+                            : `${row.filename} • ${row.chunks_indexed} chunks indexed`
+                          }
+                        </div>
+                        {!row.error && row.doc_id && (
+                          <div className="resultMeta">Document ID: {row.doc_id}</div>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -448,6 +575,10 @@ export default function App() {
             <div className="filesCard">
               <h2>📂 My Files</h2>
               <p>Manage your uploaded files and their vectors</p>
+              <button onClick={cleanupVectors} disabled={cleanupBusy} className="indexBtn">
+                {cleanupBusy ? 'Cleaning vectors...' : 'Clean Orphaned Vectors'}
+              </button>
+              {cleanupMessage ? <p className="uploadInfo">{cleanupMessage}</p> : null}
 
               {filesLoading ? (
                 <div className="loading">Loading...</div>

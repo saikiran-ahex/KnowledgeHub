@@ -2,6 +2,7 @@ from functools import lru_cache
 from datetime import datetime, timezone
 import json
 import logging
+import sqlite3
 from pathlib import Path
 from time import perf_counter
 from uuid import uuid4
@@ -13,7 +14,8 @@ from app.config import get_settings
 from app.logging_config import setup_logging
 from app.schemas import (
     AskRequest, AskResponse, AskWithFileResponse, ChatResponse, HealthResponse, UploadResponse,
-    RegisterRequest, LoginRequest, AuthResponse, FileRecord, DeleteFileResponse
+    RegisterRequest, LoginRequest, AuthResponse, FileRecord, DeleteFileResponse,
+    ConversationRecord, CreateConversationResponse, DeleteConversationResponse, CleanupVectorsResponse,
 )
 from app.services.document_loader import SUPPORTED_EXTENSIONS
 from app import database, auth
@@ -118,6 +120,20 @@ async def upload(
         logger.warning('Upload rejected: file too large filename=%s bytes=%s max=%s', file.filename, len(payload), max_bytes)
         raise HTTPException(status_code=413, detail='File too large.')
 
+    content_hash = database.sha256_bytes(payload)
+    existing_file = database.get_user_file_by_content_hash(current_user['user_id'], content_hash)
+    if existing_file:
+        logger.info(
+            'Upload rejected: duplicate content filename=%s existing_doc_id=%s user_id=%s',
+            file.filename,
+            existing_file['doc_id'],
+            current_user['user_id'],
+        )
+        raise HTTPException(
+            status_code=409,
+            detail=f"You already uploaded this file as '{existing_file['filename']}'. Delete it first if you want to re-upload.",
+        )
+
     resolved_doc_id = uuid4().hex
     user_upload_dir = settings.upload_dir / str(current_user['user_id'])
     user_upload_dir.mkdir(parents=True, exist_ok=True)
@@ -127,23 +143,35 @@ async def upload(
 
     metadata = {
         'doc_id': resolved_doc_id,
+        'source': file.filename,
         'owner_id': str(current_user['user_id']),
         'tenant_id': None,
         'tags': [],
         'uploaded_at': datetime.now(timezone.utc).isoformat(),
         'file_type': ext.lstrip('.'),
-        'content_hash': None,
+        'content_hash': content_hash,
         'page_no': None,
     }
     indexed = get_rag_service().ingest_file(output_path, metadata=metadata, raw_bytes=payload)
-    database.create_file_record(
-        user_id=current_user['user_id'],
-        doc_id=resolved_doc_id,
-        filename=file.filename,
-        file_path=str(output_path),
-        file_type=ext.lstrip('.'),
-        chunks=indexed,
-    )
+    try:
+        database.create_file_record(
+            user_id=current_user['user_id'],
+            doc_id=resolved_doc_id,
+            filename=file.filename,
+            file_path=str(output_path),
+            file_type=ext.lstrip('.'),
+            chunks=indexed,
+            content_hash=content_hash,
+        )
+    except sqlite3.IntegrityError:
+        get_rag_service().delete_by_doc_id(resolved_doc_id)
+        if output_path.exists():
+            output_path.unlink()
+        existing_file = database.get_user_file_by_content_hash(current_user['user_id'], content_hash)
+        raise HTTPException(
+            status_code=409,
+            detail=f"You already uploaded this file as '{existing_file['filename'] if existing_file else file.filename}'. Delete it first if you want to re-upload.",
+        )
     elapsed_ms = int((perf_counter() - start) * 1000)
     logger.info('Upload indexed filename=%s chunks=%s elapsed_ms=%s', file.filename, indexed, elapsed_ms)
     return UploadResponse(filename=file.filename, chunks_indexed=indexed, doc_id=resolved_doc_id)
@@ -223,6 +251,7 @@ async def ask_with_file(
 @app.post('/chat', response_model=ChatResponse)
 async def chat(
     question: str = Form(...),
+    conversation_id: str | None = Form(default=None),
     top_k: int | None = Form(default=None),
     history_json: str | None = Form(default=None),
     filters_json: str | None = Form(default=None),
@@ -261,6 +290,14 @@ async def chat(
         file_path.write_bytes(payload)
         logger.info('Chat received ad-hoc file path=%s bytes=%s', file_path, len(payload))
 
+    if conversation_id:
+        conversation = database.get_conversation(conversation_id, current_user['user_id'])
+        if not conversation:
+            raise HTTPException(status_code=404, detail='Conversation not found')
+    else:
+        conversation = database.create_conversation(current_user['user_id'])
+        conversation_id = conversation['id']
+
     answer, sources = get_rag_service().chat(
         question=question,
         top_k=top_k,
@@ -268,15 +305,51 @@ async def chat(
         file_path=file_path,
         filters=filters,
     )
+
+    user_message_content = f'{question} (file: {file.filename})' if file is not None and file.filename else question
+    message_count = database.count_conversation_messages(conversation_id)
+    if message_count == 0:
+        database.update_conversation_title(conversation_id, current_user['user_id'], question[:30])
+    database.append_conversation_message(conversation_id, 'user', user_message_content, [])
+    database.append_conversation_message(conversation_id, 'assistant', answer, sources)
+
     elapsed_ms = int((perf_counter() - start) * 1000)
     logger.info('Chat completed sources=%s elapsed_ms=%s', len(sources), elapsed_ms)
-    return ChatResponse(answer=answer, sources=sources)
+    return ChatResponse(answer=answer, sources=sources, conversation_id=conversation_id)
+
+
+@app.get('/conversations', response_model=list[ConversationRecord])
+def get_conversations(current_user: dict = Depends(get_current_user)) -> list[ConversationRecord]:
+    conversations = database.get_user_conversations(current_user['user_id'])
+    return [ConversationRecord(**conversation) for conversation in conversations]
+
+
+@app.post('/conversations', response_model=CreateConversationResponse)
+def create_conversation(current_user: dict = Depends(get_current_user)) -> CreateConversationResponse:
+    conversation = database.create_conversation(current_user['user_id'])
+    return CreateConversationResponse(conversation=ConversationRecord(**conversation))
+
+
+@app.delete('/conversations/{conversation_id}', response_model=DeleteConversationResponse)
+def delete_conversation(conversation_id: str, current_user: dict = Depends(get_current_user)) -> DeleteConversationResponse:
+    conversation = database.delete_conversation(conversation_id, current_user['user_id'])
+    if not conversation:
+        raise HTTPException(status_code=404, detail='Conversation not found')
+    return DeleteConversationResponse(success=True, message='Conversation deleted successfully')
 
 
 @app.get('/files', response_model=list[FileRecord])
 def get_files(current_user: dict = Depends(get_current_user)) -> list[FileRecord]:
     files = database.get_user_files(current_user['user_id'])
     return [FileRecord(**f) for f in files]
+
+
+@app.post('/files/cleanup-vectors', response_model=CleanupVectorsResponse)
+def cleanup_file_vectors(current_user: dict = Depends(get_current_user)) -> CleanupVectorsResponse:
+    files = database.get_user_files(current_user['user_id'])
+    valid_doc_ids = {str(file['doc_id']) for file in files}
+    result = get_rag_service().cleanup_user_vectors(str(current_user['user_id']), valid_doc_ids)
+    return CleanupVectorsResponse(**result)
 
 
 @app.delete('/files/{file_id}', response_model=DeleteFileResponse)

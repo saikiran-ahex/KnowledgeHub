@@ -6,6 +6,12 @@ class ChatTurn(BaseModel):
     content: str = Field(min_length=1)
 
 
+class StoredChatTurn(ChatTurn):
+    id: int
+    sources: list[dict] = []
+    created_at: str
+
+
 class RetrievalFilters(BaseModel):
     owner_id: str | None = None
     tenant_id: str | None = None
@@ -33,6 +39,7 @@ class AskWithFileResponse(BaseModel):
 class ChatResponse(BaseModel):
     answer: str
     sources: list[dict]
+    conversation_id: str
 
 
 class UploadResponse(BaseModel):
@@ -72,5 +79,29 @@ class FileRecord(BaseModel):
 
 
 class DeleteFileResponse(BaseModel):
+    success: bool
+    message: str
+
+
+class CleanupVectorsResponse(BaseModel):
+    success: bool
+    message: str
+    text_doc_ids_removed: list[str] = []
+    image_doc_ids_removed: list[str] = []
+
+
+class ConversationRecord(BaseModel):
+    id: str
+    title: str
+    created_at: str
+    updated_at: str
+    messages: list[StoredChatTurn] = []
+
+
+class CreateConversationResponse(BaseModel):
+    conversation: ConversationRecord
+
+
+class DeleteConversationResponse(BaseModel):
     success: bool
     message: str

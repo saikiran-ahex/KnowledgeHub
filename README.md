@@ -1,165 +1,214 @@
-# Advanced Multimodal RAG Chatbot (LangChain + React + Docker)
+# KnowledgeHub
+
+Multimodal RAG chatbot with user authentication, per-user document isolation, persistent conversations, and Qdrant-backed retrieval.
 
 ## Overview
 
-- Backend: FastAPI + LangChain orchestration
-- Frontend: React + nginx reverse proxy
-- Vector DB: Qdrant (local Docker volume)
-- Embeddings:
-  - Text: OpenAI embeddings
-  - Image: CLIP (`clip-ViT-B-32`)
-- Optional reranker: Cohere
-- Authentication: JWT-based user authentication
-- Database: SQLite for user and file management
+- Backend: FastAPI + LangChain
+- Frontend: React
+- Vector database: Qdrant
+- Database: SQLite
+- Text embeddings: OpenAI embeddings
+- Image embeddings: CLIP (`clip-ViT-B-32`)
+- Optional reranking: Cohere
+- Auth: JWT
 
-## New Features
+## Features
 
-### User Authentication
-- Register/Login system with JWT tokens
-- Secure password hashing with bcrypt
-- Token-based API authentication
+- User registration and login
+- Per-user file isolation
+- Persistent chat conversations stored in SQLite
+- Text and image retrieval
+- Ad-hoc chat file upload for a single message
+- File deletion with vector cleanup
+- Orphaned vector cleanup from the UI
+- Duplicate upload prevention per user using file content hash
 
-### User-Specific File Management
-- Each user has isolated file storage
-- Files are stored in user-specific directories
-- Database tracking of all uploaded files
-- View all your uploaded files with metadata
-- Delete files and their associated vectors
+## Current Behavior
 
-## Current UX Flows
+### Authentication
 
-1. **Login/Register**
-- First-time users register with username and password
-- Existing users login to access their files
-- JWT token stored in browser localStorage
+- Users register and log in with username and password
+- JWT tokens are stored in browser `localStorage`
+- All file and conversation operations are scoped to the authenticated user
 
-2. **Upload Files**
-- Navigate to "Upload Files" from sidebar
-- Select and upload files to your personal index
-- Files are automatically indexed with user-specific metadata
+### Uploads
 
-3. **My Files**
-- View all your uploaded files
-- See file metadata (type, chunks, upload date)
-- Delete files and their vectors permanently
+- Supported files: `.txt`, `.md`, `.pdf`, `.doc`, `.docx`, `.csv`, `.png`, `.jpg`, `.jpeg`, `.webp`
+- Uploaded files are stored in `backend/data/uploads/{user_id}/`
+- Files are indexed into Qdrant with user ownership metadata
+- The same user cannot upload the same file content twice
+- Different users can upload the same file independently
 
-4. **Chat**
-- Ask questions against your indexed knowledge
-- Optional file upload is ad-hoc for that message
-- Ad-hoc chat file is not permanently indexed
-- Only searches your own files (user isolation)
+### Chat
 
-## UI Preview
+- `/chat` searches only the current user's indexed data
+- Chat conversations are persisted in SQLite and restored on login
+- New conversations are created automatically
+- Ad-hoc chat file uploads are used only for that request and are not persistently indexed
 
-![Chat Screen](docs/images/chat-screen.png)
+### My Files
 
-## Supported File Types
-
-- Documents: `.txt`, `.md`, `.pdf`, `.doc`, `.docx`, `.csv`
-- Images: `.png`, `.jpg`, `.jpeg`, `.webp`
-
-## Metadata Stored During Indexing
-
-- `doc_id` (auto-generated UUID)
-- `chunk_id`
-- `uploaded_at` (UTC ISO timestamp)
-- `file_type`
-- `content_hash` (SHA-256 of raw file bytes)
-- `tags` (auto-generated heuristic tags)
-- `owner_id` (user ID - automatically set)
-- `tenant_id` (currently stored as `null`)
-- `page_no` (placeholder)
+- Shows the authenticated user's tracked uploads
+- Deleting a file removes:
+  - the SQLite file record
+  - the physical uploaded file
+  - associated vectors in Qdrant
+- `Clean Orphaned Vectors` removes vectors owned by the current user whose `doc_id` no longer exists in the `files` table
 
 ## API Endpoints
 
-### Authentication
-- `POST /register` - Register new user
-- `POST /login` - Login and get JWT token
+### Auth
+
+- `POST /register`
+- `POST /login`
+
+### Health
+
+- `GET /health`
 
 ### Files
-- `POST /upload` - Upload and index file (requires auth)
-- `GET /files` - List user's files (requires auth)
-- `DELETE /files/{file_id}` - Delete file and vectors (requires auth)
 
-### Chat
-- `GET /health` - Health check
-- `POST /ask` - Ask question (requires auth, filters by user)
-- `POST /ask-with-file` - Ask with ad-hoc file (requires auth)
-- `POST /chat` - Chat endpoint (requires auth, filters by user)
+- `POST /upload`
+- `GET /files`
+- `POST /files/cleanup-vectors`
+- `DELETE /files/{file_id}`
 
-### Authentication Header
+### Conversations
+
+- `GET /conversations`
+- `POST /conversations`
+- `DELETE /conversations/{conversation_id}`
+
+### Retrieval / Chat
+
+- `POST /ask`
+- `POST /ask-with-file`
+- `POST /chat`
+
 All authenticated endpoints require:
-```
+
+```http
 Authorization: Bearer <jwt_token>
 ```
 
-### Filters
+## Stored Metadata
 
-Filtering is automatically applied by user:
-- `owner_id` (automatically set to current user)
-- `tenant_id`
+Indexed documents store metadata such as:
+
+- `doc_id`
+- `chunk_id`
+- `source`
+- `uploaded_at`
 - `file_type`
+- `content_hash`
 - `tags`
+- `owner_id`
+- `tenant_id`
+- `page_no`
 
 ## Database Schema
 
-### Users Table
-- `id` - Primary key
-- `username` - Unique username
-- `password_hash` - Bcrypt hashed password
-- `created_at` - Registration timestamp
+### `users`
 
-### Files Table
-- `id` - Primary key
-- `user_id` - Foreign key to users
-- `doc_id` - Unique document ID (for vector deletion)
-- `filename` - Original filename
-- `file_path` - Physical file path
-- `file_type` - File extension
-- `chunks_indexed` - Number of chunks created
-- `uploaded_at` - Upload timestamp
+- `id`
+- `username`
+- `password_hash`
+- `created_at`
 
-## Startup Behavior
+### `files`
 
-- Backend initializes database on startup
-- Backend performs warmup by initializing `RagService`
-- During warmup, `/chat` requests can fail with `502` from frontend proxy
-- Wait for backend logs showing startup completion before sending first request
+- `id`
+- `user_id`
+- `doc_id`
+- `filename`
+- `file_path`
+- `file_type`
+- `content_hash`
+- `chunks_indexed`
+- `uploaded_at`
+
+Unique rule:
+
+- `(user_id, content_hash)` must be unique when `content_hash` is present
+
+### `conversations`
+
+- `id`
+- `user_id`
+- `title`
+- `created_at`
+- `updated_at`
+
+### `conversation_messages`
+
+- `id`
+- `conversation_id`
+- `role`
+- `content`
+- `sources_json`
+- `created_at`
 
 ## Run
 
+Start the stack:
+
 ```bash
-docker compose up -d --build --force-recreate backend frontend
+docker compose up --build
 ```
 
 Open:
+
 - Frontend: `http://localhost:8502`
 - Backend docs: `http://localhost:8001/docs`
 
 ## Persistence
 
-- Qdrant data: `backend/data/qdrant`
-- Uploaded files: `backend/data/uploads/{user_id}/`
-- SQLite database: `backend/data/app.db`
+Persistent application data lives in:
 
-## Environment Variables
+- SQLite DB: `backend/data/app.db`
+- Uploaded files: `backend/data/uploads/`
+- Qdrant storage: `backend/data/qdrant/`
 
-Add to `.env`:
+## Fresh Reset
+
+This removes all users, chats, files, and vectors:
+
+```powershell
+docker compose down
+Remove-Item -Force backend\data\app.db
+Remove-Item -Recurse -Force backend\data\uploads
+Remove-Item -Recurse -Force backend\data\qdrant
+docker compose up --build
 ```
-JWT_SECRET_KEY=your-secret-key-here
+
+## Startup Notes
+
+- Backend initializes SQLite and Qdrant collections on startup
+- The first startup after a reset can take longer because collections are recreated
+- Wait for backend startup to complete before sending the first chat request
+
+## Environment
+
+Required in `.env`:
+
+```env
+OPENAI_API_KEY=...
+JWT_SECRET_KEY=change-this-secret-key-in-production
 ```
 
-## Security Notes
+Optional:
 
-- Change `JWT_SECRET_KEY` in production
-- Passwords are hashed with bcrypt
-- JWT tokens expire after 24 hours
-- User files are isolated by user_id
-- Vector store filters ensure users only access their own data
+```env
+COHERE_API_KEY=...
+OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_MODEL=gpt-5-mini-2025-08-07
+EMBEDDING_MODEL=text-embedding-3-large
+QDRANT_URL=http://qdrant:6333
+```
 
 ## Notes
 
-- Frontend calls backend via nginx path `/api`
-- Ensure valid provider keys are set in `.env`
-- Each user's files are stored in separate directories
-- Deleting a file removes: database record, physical file, and all vectors
+- Frontend requests are sent to backend through `/api`
+- Existing stale vectors from older versions can be cleaned from the `My Files` page
+- Duplicate prevention is based on file content hash, not filename

@@ -52,6 +52,11 @@ class HealthResponse(BaseModel):
     status: str
 
 
+class ImageModelOption(BaseModel):
+    value: str
+    label: str
+
+
 class RegisterRequest(BaseModel):
     username: str = Field(min_length=3)
     password: str = Field(min_length=6)

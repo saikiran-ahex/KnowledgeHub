@@ -6,7 +6,7 @@ import { TiAttachment } from "react-icons/ti";
 const API_BASE = '/api';
 const SUPPORTED = '.txt,.md,.pdf,.doc,.docx,.csv,.png,.jpg,.jpeg,.webp';
 const MAX_UPLOAD_SIZE_MB = 30;
-const IMAGE_MODELS = [
+const DEFAULT_IMAGE_MODELS = [
   { value: 'gpt-5-mini', label: 'GPT-5 Mini' },
   { value: 'gpt-4.1-mini', label: 'GPT-4.1 Mini' },
 ];
@@ -67,7 +67,8 @@ export default function App() {
   const [filesToIndex, setFilesToIndex] = useState([]);
   const [indexResult, setIndexResult] = useState([]);
   const [indexBusy, setIndexBusy] = useState(false);
-  const [selectedImageModel, setSelectedImageModel] = useState('gpt-5-mini');
+  const [imageModels, setImageModels] = useState(DEFAULT_IMAGE_MODELS);
+  const [selectedImageModel, setSelectedImageModel] = useState(DEFAULT_IMAGE_MODELS[0].value);
 
   const [userFiles, setUserFiles] = useState([]);
   const [filesLoading, setFilesLoading] = useState(false);
@@ -96,6 +97,10 @@ export default function App() {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [history]);
+
+  useEffect(() => {
+    loadImageModels();
+  }, []);
 
   useEffect(() => {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -231,6 +236,26 @@ export default function App() {
       console.error('Failed to load files:', err);
     } finally {
       setFilesLoading(false);
+    }
+  }
+
+  async function loadImageModels() {
+    try {
+      const res = await fetch(`${API_BASE}/image-models`);
+      const data = await readApiResponse(res);
+      if (!res.ok) throw new Error(data.detail || 'Failed to load image models');
+      if (Array.isArray(data) && data.length > 0) {
+        setImageModels(data);
+        setSelectedImageModel((prev) => (
+          data.some((model) => model.value === prev) ? prev : data[0].value
+        ));
+      }
+    } catch (err) {
+      console.error('Failed to load image models:', err);
+      setImageModels(DEFAULT_IMAGE_MODELS);
+      setSelectedImageModel((prev) => (
+        DEFAULT_IMAGE_MODELS.some((model) => model.value === prev) ? prev : DEFAULT_IMAGE_MODELS[0].value
+      ));
     }
   }
 
@@ -536,16 +561,6 @@ export default function App() {
         <header className="header">
           <button className="menuBtn" onClick={() => setSidebarOpen(!sidebarOpen)}>menu</button>
           <h1>✨ KnowledgeHub</h1>
-          <select 
-            value={selectedImageModel} 
-            onChange={(e) => setSelectedImageModel(e.target.value)}
-            className="headerModelSelect"
-            title="Select Model"
-          >
-            {IMAGE_MODELS.map(model => (
-              <option key={model.value} value={model.value}>{model.label}</option>
-            ))}
-          </select>
           <div className="headerActions">
             <button className={`headerBtn ${page === 'index' ? 'active' : ''}`} onClick={() => setPage('index')}>
               <RiUploadCloud2Fill /> Upload Files
@@ -612,7 +627,7 @@ export default function App() {
                     className="imageModelSelect"
                     title="Image model for this ad-hoc image"
                   >
-                    {IMAGE_MODELS.map((model) => (
+                    {imageModels.map((model) => (
                       <option key={model.value} value={model.value}>{model.label}</option>
                     ))}
                   </select>

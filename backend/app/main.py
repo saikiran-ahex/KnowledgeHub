@@ -26,10 +26,6 @@ logger = logging.getLogger(__name__)
 settings = get_settings()
 ALLOWED_ADHOC_IMAGE_MODELS = set(settings.adhoc_image_models)
 
-
-def _image_model_label(model_name: str) -> str:
-    return model_name.replace('-', ' ').upper().replace('GPT ', 'GPT-')
-
 app = FastAPI(title=settings.app_name)
 
 app.add_middleware(
@@ -67,10 +63,7 @@ def health() -> HealthResponse:
 
 @app.get('/image-models', response_model=list[ImageModelOption])
 def get_image_models() -> list[ImageModelOption]:
-    return [
-        ImageModelOption(value=model_name, label=_image_model_label(model_name))
-        for model_name in settings.adhoc_image_models
-    ]
+    return [ImageModelOption(**item) for item in settings.adhoc_image_model_options]
 
 
 def get_current_user(authorization: str = Header(None)):

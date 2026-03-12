@@ -9,7 +9,7 @@ const MAX_UPLOAD_SIZE_MB = 30;
 const DEFAULT_IMAGE_MODELS = [
   { value: 'gpt-5-mini', label: 'GPT-5 Mini' },
   { value: 'gpt-4.1-mini', label: 'GPT-4.1 Mini' },
-  {value:'free model', label: 'Nemotron (Free )'}
+  { value: 'nemotron-nano', label: 'Nemotron Nano VL (Free)' },
 ];
 
 const EXAMPLE_QUESTIONS = [
@@ -84,7 +84,9 @@ export default function App() {
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef(null);
   const baseTranscriptRef = useRef('');
+  const liveTranscriptRef = useRef('');
   const pendingSendAfterListeningRef = useRef(false);
+  const pendingSendTextRef = useRef('');
 
   const currentChat = chats.find((c) => c.id === activeChat) || chats[0];
   const history = currentChat.messages;
@@ -126,14 +128,17 @@ export default function App() {
 
         if (finalTranscript) {
           baseTranscriptRef.current += finalTranscript;
+          liveTranscriptRef.current = baseTranscriptRef.current;
           setQuestion(baseTranscriptRef.current);
         } else {
-          setQuestion(baseTranscriptRef.current + interimTranscript);
+          liveTranscriptRef.current = baseTranscriptRef.current + interimTranscript;
+          setQuestion(liveTranscriptRef.current);
         }
       };
 
       recognitionRef.current.onerror = () => {
         pendingSendAfterListeningRef.current = false;
+        pendingSendTextRef.current = '';
         setIsListening(false);
       };
 
@@ -141,7 +146,10 @@ export default function App() {
         setIsListening(false);
         if (pendingSendAfterListeningRef.current) {
           pendingSendAfterListeningRef.current = false;
-          setTimeout(() => sendMessage(), 0);
+          const textToSend = pendingSendTextRef.current || liveTranscriptRef.current || baseTranscriptRef.current;
+          pendingSendTextRef.current = '';
+          setQuestion(textToSend);
+          setTimeout(() => sendMessage(textToSend), 0);
         }
       };
     }
@@ -152,13 +160,17 @@ export default function App() {
       alert('Speech recognition is not supported in your browser');
       return;
     }
-
+    if(question.trim().length !== 0) {
+      sendMessage();
+    }
     if (isListening) {
       pendingSendAfterListeningRef.current = false;
+      pendingSendTextRef.current = '';
       recognitionRef.current.stop();
       setIsListening(false);
     } else {
       baseTranscriptRef.current = question;
+      liveTranscriptRef.current = question;
       recognitionRef.current.start();
       setIsListening(true);
     }
@@ -169,6 +181,7 @@ export default function App() {
       e.preventDefault();
       if (isListening && recognitionRef.current) {
         pendingSendAfterListeningRef.current = true;
+        pendingSendTextRef.current = liveTranscriptRef.current || question;
         recognitionRef.current.stop();
         setIsListening(false);
         return;
@@ -397,11 +410,13 @@ export default function App() {
     }
   }
 
-  async function sendMessage() {
-    const q = question.trim();
+  async function sendMessage(overrideQuestion = null) {
+    const q = String(overrideQuestion ?? question).trim();
     if (!q || !currentChat) return;
 
     baseTranscriptRef.current = '';
+    liveTranscriptRef.current = '';
+    pendingSendTextRef.current = '';
     setBusy(true);
     setQuestion('');
 

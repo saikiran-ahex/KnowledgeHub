@@ -5,6 +5,13 @@ from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+ADHOC_IMAGE_MODEL_OPTIONS = (
+    {'value': 'gpt-5-mini', 'label': 'GPT-5 Mini'},
+    {'value': 'gpt-4.1-mini', 'label': 'GPT-4.1 Mini'},
+    {'value': 'nemotron-nano', 'label': 'Nemotron Nano VL (Free)'},
+)
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file='.env', env_file_encoding='utf-8', extra='ignore')
 
@@ -41,12 +48,19 @@ class Settings(BaseSettings):
     openrouter_model: str = Field(default='nvidia/nemotron-nano-12b-v2-vl:free')
 
     clip_model_name: str = Field(default='clip-ViT-B-32')
-    adhoc_image_models: tuple[str, ...] = ('gpt-5-mini', 'gpt-4.1-mini', 'free model')
 
     cohere_api_key: str = Field(default='')
     cohere_rerank_model: str = 'rerank-v3.5'
 
     jwt_secret_key: str = Field(default='change-this-secret-key-in-production')
+
+    @property
+    def adhoc_image_model_options(self) -> tuple[dict[str, str], ...]:
+        return ADHOC_IMAGE_MODEL_OPTIONS
+
+    @property
+    def adhoc_image_models(self) -> tuple[str, ...]:
+        return tuple(str(item['value']) for item in ADHOC_IMAGE_MODEL_OPTIONS)
 
 
 @lru_cache(maxsize=1)

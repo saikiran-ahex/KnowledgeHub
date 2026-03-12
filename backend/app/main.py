@@ -290,6 +290,8 @@ async def chat(
             )
         if ext in {'.png', '.jpg', '.jpeg', '.webp'} and image_model and image_model not in ALLOWED_ADHOC_IMAGE_MODELS:
             raise HTTPException(status_code=400, detail=f'Unsupported image model. Allowed: {sorted(ALLOWED_ADHOC_IMAGE_MODELS)}')
+        
+        print("image_model: ", image_model)
         payload = await file.read()
         max_bytes = settings.max_upload_size_mb * 1024 * 1024
         if len(payload) > max_bytes:

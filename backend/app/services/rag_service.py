@@ -518,23 +518,44 @@ class RagService:
 
         encoded = base64.b64encode(image_path.read_bytes()).decode('utf-8')
         image_url = f'data:{mime};base64,{encoded}'
-        response = self.openai_client.chat.completions.create(
-            model=image_model or self.settings.openai_model,
-            messages=[
-                {
-                    'role': 'system',
-                    'content': 'You analyze images for RAG and extract relevant facts as concise text.',
-                },
-                {
-                    'role': 'user',
-                    'content': [
-                        {'type': 'text', 'text': f'Question: {question}\nDescribe key details and visible text.'},
-                        {'type': 'image_url', 'image_url': {'url': image_url}},
-                    ],
-                },
-            ],
-        )
-        return response.choices[0].message.content or ''
+        if image_model=='free model':
+            _client=OpenAI(api_key=self.settings.openrouter_api_key, base_url=self.settings.openrouter_base_url)
+            _model=self.settings.openrouter_model
+            logger.info('Using OpenRouter for image analysis model=%s', _model)
+        else:
+            _client=self.openai_client
+            _model=image_model or self.settings.openai_model
+            logger.info('Using OpenAI for image analysis model=%s', _model)
+        
+        logger.info('Image analysis started file=%s mime=%s model=%s', image_path.name, mime, _model)
+        try:
+            response = _client.chat.completions.create(
+                model=_model,
+                messages=[
+                    {
+                        'role': 'system',
+                        'content': 'You analyze images for RAG and extract relevant facts as concise text.',
+                    },
+                    {
+                        'role': 'user',
+                        'content': [
+                            {'type': 'text', 'text': f'Question: {question}\nDescribe key details and visible text.'},
+                            {'type': 'image_url', 'image_url': {'url': image_url}},
+                        ],
+                    },
+                ],
+            )
+            logger.info('Image analysis API call completed response_type=%s', type(response).__name__)
+            if response and response.choices and len(response.choices) > 0:
+                content = response.choices[0].message.content or ''
+                logger.info('Image analysis successful content_length=%s', len(content))
+                return content
+            else:
+                logger.warning('Empty response from image analysis API response=%s choices=%s', response, getattr(response, 'choices', None))
+                return ''
+        except Exception as exc:
+            logger.error('Image analysis failed file=%s model=%s error=%s', image_path.name, _model, exc)
+            return ''
 
     def ask(
         self,

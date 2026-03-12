@@ -621,7 +621,7 @@ export default function App() {
                 >
                   <IoMicSharp />
                 </button>
-                {/* {isAdhocImage ? (
+                {isAdhocImage ? (
                   <select
                     value={selectedImageModel}
                     onChange={(e) => setSelectedImageModel(e.target.value)}
@@ -632,7 +632,7 @@ export default function App() {
                       <option key={model.value} value={model.value}>{model.label}</option>
                     ))}
                   </select>
-                ) : null} */}
+                ) : null}
                 <textarea
                   rows={1}
                   placeholder={isListening ? 'Listening...' : 'Type your message...'}

@@ -41,18 +41,36 @@ function Sources({ sources }) {
   );
 }
 
-function ChatMessage({ role, content, sources }) {
+function ChatMessage({ role, content, sources, filePreviewUrl, fileName }) {
   return (
     <div className={`msg ${role}`}>
       {role === 'assistant' && <div className="botName">Zill</div>}
-      <div className="bubble">
-        <p>{content}</p>
+      <div className="bubble" style={{ background: 'transparent', boxShadow: 'none', padding: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
+        {filePreviewUrl && (
+          <img
+            src={filePreviewUrl}
+            alt={fileName || 'uploaded image'}
+            style={{ maxWidth: '220px', maxHeight: '180px', borderRadius: '12px', display: 'block' }}
+          />
+        )}
+        {content && (
+          <div
+            className="bubble"
+          style={{
+          margin: 0,
+          maxWidth: "260px",
+          width: "fit-content",
+          alignSelf: "flex-end"
+          }}
+        >
+            <p style={{ margin: 0, wordBreak: "break-word" }}>{content}</p>
+          </div>
+        )}
         {role === 'assistant' ? <Sources sources={sources} /> : null}
       </div>
     </div>
   );
 }
-
 export default function App() {
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [username, setUsername] = useState(localStorage.getItem('username') || '');
@@ -178,7 +196,7 @@ export default function App() {
   }
 
   useEffect(() => {
-    if (token && page === 'files') {
+    if (token && page === 'admin') {
       loadUserFiles();
     }
   }, [token, page]);
@@ -405,7 +423,11 @@ export default function App() {
     setBusy(true);
     setQuestion('');
 
-    const userMsg = { role: 'user', content: file ? `${q} (file: ${file.name})` : q };
+    // const userMsg = { role: 'user', content: file ? `${q} (file: ${file.name})` : q };
+    const isImage = file && /\.(png|jpe?g|webp)$/i.test(file.name);
+    const filePreviewUrl = isImage ? URL.createObjectURL(file) : null;
+    const userMsg = { role: 'user', content: q, filePreviewUrl, fileName: file?.name };
+    
     const historyForApi = history.map((m) => ({ role: m.role, content: m.content }));
     let targetConversationId = currentChat.id;
 
@@ -563,11 +585,8 @@ export default function App() {
           <button className="menuBtn" onClick={() => setSidebarOpen(!sidebarOpen)}>menu</button>
           <h1>✨ KnowledgeHub</h1>
           <div className="headerActions">
-            <button className={`headerBtn ${page === 'index' ? 'active' : ''}`} onClick={() => setPage('index')}>
-              <RiUploadCloud2Fill /> Upload Files
-            </button>
-            <button className={`headerBtn ${page === 'files' ? 'active' : ''}`} onClick={() => setPage('files')}>
-              📂 My Files
+            <button className={`headerBtn ${page === 'admin' ? 'active' : ''}`} onClick={() => setPage('admin')}>
+              ⚙️ Admin
             </button>
           </div>
         </header>
@@ -591,7 +610,7 @@ export default function App() {
                 </div>
               ) : null}
 
-              {history.map((m, i) => <ChatMessage key={i} role={m.role} content={m.content} sources={m.sources} />)}
+              {history.map((m, i) => <ChatMessage key={i} role={m.role} content={m.content} sources={m.sources} filePreviewUrl={m.filePreviewUrl} fileName={m.fileName} />)}
               {busy && (
                 <div className="msg assistant">
                   <div className="botName">Zill</div>
@@ -644,85 +663,77 @@ export default function App() {
               </div>
             </div>
           </>
-        ) : page === 'index' ? (
-          <div className="indexPage">
-            <button className="closeBtn" onClick={() => setPage('chat')}>✕</button>
-            <div className="indexCard">
-              <h2>📤 Upload Files</h2>
-              <p>Upload files to add them to your vector index. Tags are auto-generated.</p>
-              <p className="uploadInfo">Max upload size: {MAX_UPLOAD_SIZE_MB}MB per file</p>
-
-              <input type="file" multiple accept={SUPPORTED} onChange={(e) => setFilesToIndex(Array.from(e.target.files || []))} className="fileInput" />
-
-              {filesToIndex.length > 0 ? (
-                <div className="fileList">
-                  {filesToIndex.map((f, i) => <div key={i} className="fileItem">{f.name}</div>)}
-                </div>
-              ) : null}
-
-              <button onClick={uploadAndIndex} disabled={filesToIndex.length === 0 || indexBusy} className="indexBtn">
-                {indexBusy ? 'Indexing...' : 'Upload and Index'}
-              </button>
-
-              {indexResult.length > 0 ? (
-                <div className="uploadResults">
-                  {indexResult.map((row, idx) => (
-                    <div key={idx} className={`uploadResultItem ${row.error ? 'error' : 'success'}`}>
-                      <div className="resultIcon">
-                        {row.error ? '❌' : '✅'}
-                      </div>
-                      <div className="resultContent">
-                        <div className="resultTitle">
-                          {row.error ? 'Upload Failed' : 'Successfully Uploaded'}
-                        </div>
-                        <div className="resultDetails">
-                          {row.error 
-                            ? `${row.filename || 'File'}: ${row.error}`
-                            : `${row.filename} • ${row.chunks_indexed} chunks indexed`
-                          }
-                        </div>
-                        {!row.error && row.doc_id && (
-                          <div className="resultMeta">Document ID: {row.doc_id}</div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : null}
-            </div>
-          </div>
         ) : (
-          <div className="filesPage">
+          <div className="adminPage">
             <button className="closeBtn" onClick={() => setPage('chat')}>✕</button>
-            <div className="filesCard">
-              <h2>📂 My Files</h2>
-              <p>Manage your uploaded files and their vectors</p>
-              <button onClick={cleanupVectors} disabled={cleanupBusy} className="indexBtn">
-                {cleanupBusy ? 'Cleaning vectors...' : 'Clean Orphaned Vectors'}
-              </button>
-              {cleanupMessage ? <p className="uploadInfo">{cleanupMessage}</p> : null}
-
-              {filesLoading ? (
-                <div className="loading">Loading...</div>
-              ) : userFiles.length === 0 ? (
-                <div className="emptyFiles">No files uploaded yet</div>
-              ) : (
-                <div className="filesTable">
-                  {userFiles.map((f) => (
-                    <div key={f.id} className="fileRow">
-                      <div className="fileInfo">
-                        <div className="fileName">{f.filename}</div>
-                        <div className="fileMeta">
-                          {f.file_type} • {f.chunks_indexed} chunks • {new Date(f.uploaded_at).toLocaleDateString()}
+            <div className="adminContainer">
+              <div className="adminSection">
+                <h2>Upload Files</h2>
+                <p>Upload files to index and search</p>
+                <p className="uploadInfo">Max file size: {MAX_UPLOAD_SIZE_MB}MB per file</p>
+                
+                <input type="file" multiple accept={SUPPORTED} onChange={(e) => setFilesToIndex(Array.from(e.target.files || []))} className="fileInput" />
+                
+                {filesToIndex.length > 0 && (
+                  <div className="fileList">
+                    {filesToIndex.map((f, i) => <div key={i} className="fileItem">{f.name}</div>)}
+                  </div>
+                )}
+                
+                <button onClick={uploadAndIndex} disabled={filesToIndex.length === 0 || indexBusy} className="indexBtn">
+                  {indexBusy ? 'Indexing...' : 'Upload Documents'}
+                </button>
+                
+                {indexResult.length > 0 && (
+                  <div className="uploadResults">
+                    {indexResult.map((row, idx) => (
+                      <div key={idx} className={`uploadResultItem ${row.error ? 'error' : 'success'}`}>
+                        <div className="resultIcon">{row.error ? '❌' : '✅'}</div>
+                        <div className="resultContent">
+                          <div className="resultTitle">
+                            {row.error ? 'Upload Failed' : 'Successfully Uploaded'}
+                          </div>
+                          <div className="resultDetails">
+                            {row.error ? `${row.filename || 'File'}: ${row.error}` : `${row.filename} • ${row.chunks_indexed} chunks indexed`}
+                          </div>
+                          {!row.error && row.doc_id && <div className="resultMeta">Document ID: {row.doc_id}</div>}
                         </div>
                       </div>
-                      <button onClick={() => deleteUserFile(f.id)} className="deleteFileBtn">
-                        🗑️ Delete
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                )}
+              </div>
+              
+              <div className="adminSection">
+                <h2>📂 My Files</h2>
+                <p>Manage uploaded files</p>
+                <button onClick={cleanupVectors} disabled={cleanupBusy} className="indexBtn">
+                  {cleanupBusy ? 'Cleaning up...' : 'Remove unused data'}
+                </button>
+                {cleanupMessage && <p className="uploadInfo">{cleanupMessage}</p>}
+                
+                {filesLoading ? (
+                  <div className="loading">Loading...</div>
+                ) : userFiles.length === 0 ? (
+                  <div className="emptyFiles">No files uploaded yet</div>
+                ) : (
+                  <div className="filesTable">
+                    {userFiles.map((f) => (
+                      <div key={f.id} className="fileRow">
+                        <div className="fileInfo">
+                          <div className="fileName">{f.filename}</div>
+                          <div className="fileMeta">
+                            {f.file_type} • {f.chunks_indexed} chunks • {new Date(f.uploaded_at).toLocaleDateString()}
+                          </div>
+                        </div>
+                        <button onClick={() => deleteUserFile(f.id)} className="deleteFileBtn">
+                          🗑️ Delete
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}

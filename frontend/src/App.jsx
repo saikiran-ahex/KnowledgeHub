@@ -9,6 +9,7 @@ const MAX_UPLOAD_SIZE_MB = 30;
 const DEFAULT_IMAGE_MODELS = [
   { value: 'gpt-5-mini', label: 'GPT-5 Mini' },
   { value: 'gpt-4.1-mini', label: 'GPT-4.1 Mini' },
+  {value:'free model', label: 'Nemotron (Free )'}
 ];
 
 const EXAMPLE_QUESTIONS = [
@@ -620,7 +621,7 @@ export default function App() {
                 >
                   <IoMicSharp />
                 </button>
-                {isAdhocImage ? (
+                {/* {isAdhocImage ? (
                   <select
                     value={selectedImageModel}
                     onChange={(e) => setSelectedImageModel(e.target.value)}
@@ -631,7 +632,7 @@ export default function App() {
                       <option key={model.value} value={model.value}>{model.label}</option>
                     ))}
                   </select>
-                ) : null}
+                ) : null} */}
                 <textarea
                   rows={1}
                   placeholder={isListening ? 'Listening...' : 'Type your message...'}

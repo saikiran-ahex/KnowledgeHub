@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     app_env: str = 'dev'
     app_host: str = '0.0.0.0'
     app_port: int = 8000
+    database_url: str = Field(default='postgresql://knowledgehub:knowledgehub@postgres:5432/knowledgehub')
 
     upload_dir: Path = Path('data/uploads')
     max_upload_size_mb: int = 30

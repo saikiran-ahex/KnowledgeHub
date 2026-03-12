@@ -7,7 +7,7 @@ Multimodal RAG chatbot with user authentication, per-user document isolation, pe
 - Backend: FastAPI + LangChain
 - Frontend: React
 - Vector database: Qdrant
-- Database: SQLite
+- Database: PostgreSQL
 - Text embeddings: OpenAI embeddings
 - Image embeddings: CLIP (`clip-ViT-B-32`)
 - Optional reranking: Cohere
@@ -17,7 +17,7 @@ Multimodal RAG chatbot with user authentication, per-user document isolation, pe
 
 - User registration and login
 - Per-user file isolation
-- Persistent chat conversations stored in SQLite
+- Persistent chat conversations stored in PostgreSQL
 - Text and image retrieval
 - Ad-hoc chat file upload for a single message
 - File deletion with vector cleanup
@@ -43,7 +43,7 @@ Multimodal RAG chatbot with user authentication, per-user document isolation, pe
 ### Chat
 
 - `/chat` searches only the current user's indexed data
-- Chat conversations are persisted in SQLite and restored on login
+- Chat conversations are persisted in PostgreSQL and restored on login
 - New conversations are created automatically
 - Ad-hoc chat file uploads are used only for that request and are not persistently indexed
 
@@ -51,7 +51,7 @@ Multimodal RAG chatbot with user authentication, per-user document isolation, pe
 
 - Shows the authenticated user's tracked uploads
 - Deleting a file removes:
-  - the SQLite file record
+  - the PostgreSQL file record
   - the physical uploaded file
   - associated vectors in Qdrant
 - `Clean Orphaned Vectors` removes vectors owned by the current user whose `doc_id` no longer exists in the `files` table
@@ -162,11 +162,17 @@ Open:
 - Frontend: `http://localhost:8502`
 - Backend docs: `http://localhost:8001/docs`
 
+Migration note:
+
+- Existing SQLite data in `backend/data/app.db` is not migrated automatically into PostgreSQL
+- If you need old users, chats, or file records, migrate them before switching environments
+- A helper script is available: `python -m app.migrate_sqlite_to_postgres`
+
 ## Persistence
 
 Persistent application data lives in:
 
-- SQLite DB: `backend/data/app.db`
+- PostgreSQL data: Docker volume `postgres_data`
 - Uploaded files: `backend/data/uploads/`
 - Qdrant storage: `backend/data/qdrant/`
 
@@ -176,15 +182,15 @@ This removes all users, chats, files, and vectors:
 
 ```powershell
 docker compose down
-Remove-Item -Force backend\data\app.db
 Remove-Item -Recurse -Force backend\data\uploads
 Remove-Item -Recurse -Force backend\data\qdrant
+docker volume rm knowledgehub_postgres_data
 docker compose up --build
 ```
 
 ## Startup Notes
 
-- Backend initializes SQLite and Qdrant collections on startup
+- Backend initializes PostgreSQL tables and Qdrant collections on startup
 - The first startup after a reset can take longer because collections are recreated
 - Wait for backend startup to complete before sending the first chat request
 

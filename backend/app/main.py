@@ -2,11 +2,11 @@ from functools import lru_cache
 from datetime import datetime, timezone
 import json
 import logging
-import sqlite3
 from pathlib import Path
 from time import perf_counter
 from uuid import uuid4
 
+import psycopg
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -177,7 +177,7 @@ async def upload(
             chunks=indexed,
             content_hash=content_hash,
         )
-    except sqlite3.IntegrityError:
+    except psycopg.IntegrityError:
         get_rag_service().delete_by_doc_id(resolved_doc_id)
         if output_path.exists():
             output_path.unlink()

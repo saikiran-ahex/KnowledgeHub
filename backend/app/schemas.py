@@ -72,6 +72,7 @@ class AuthResponse(BaseModel):
     token_type: str = 'bearer'
     user_id: int
     username: str
+    is_admin: bool = False
 
 
 class FileRecord(BaseModel):

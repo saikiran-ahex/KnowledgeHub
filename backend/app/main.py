@@ -82,9 +82,16 @@ def get_current_user(authorization: str = Header(None)):
         raise HTTPException(status_code=401, detail='Invalid token')
     user_id = payload.get('user_id')
     username = payload.get('username')
+    is_admin = payload.get('is_admin', False)
     if not user_id or not username:
         raise HTTPException(status_code=401, detail='Invalid token payload')
-    return {'user_id': user_id, 'username': username}
+    return {'user_id': user_id, 'username': username, 'is_admin': is_admin}
+
+
+def get_admin_user(current_user: dict = Depends(get_current_user)):
+    if not current_user.get('is_admin'):
+        raise HTTPException(status_code=403, detail='Admin access required')
+    return current_user
 
 
 @app.post('/register', response_model=AuthResponse)
@@ -93,10 +100,11 @@ def register(req: RegisterRequest) -> AuthResponse:
     if existing:
         raise HTTPException(status_code=400, detail='Username already exists')
     password_hash = auth.hash_password(req.password)
-    user_id = database.create_user(req.username, password_hash)
-    token = auth.create_access_token({'user_id': user_id, 'username': req.username})
-    logger.info('User registered user_id=%s username=%s', user_id, req.username)
-    return AuthResponse(access_token=token, user_id=user_id, username=req.username)
+    is_admin = req.username == 'admin'
+    user_id = database.create_user(req.username, password_hash, is_admin)
+    token = auth.create_access_token({'user_id': user_id, 'username': req.username, 'is_admin': is_admin})
+    logger.info('User registered user_id=%s username=%s is_admin=%s', user_id, req.username, is_admin)
+    return AuthResponse(access_token=token, user_id=user_id, username=req.username, is_admin=is_admin)
 
 
 @app.post('/login', response_model=AuthResponse)
@@ -104,15 +112,16 @@ def login(req: LoginRequest) -> AuthResponse:
     user = database.get_user_by_username(req.username)
     if not user or not auth.verify_password(req.password, user['password_hash']):
         raise HTTPException(status_code=401, detail='Invalid credentials')
-    token = auth.create_access_token({'user_id': user['id'], 'username': user['username']})
-    logger.info('User logged in user_id=%s username=%s', user['id'], user['username'])
-    return AuthResponse(access_token=token, user_id=user['id'], username=user['username'])
+    is_admin = user.get('is_admin', False)
+    token = auth.create_access_token({'user_id': user['id'], 'username': user['username'], 'is_admin': is_admin})
+    logger.info('User logged in user_id=%s username=%s is_admin=%s', user['id'], user['username'], is_admin)
+    return AuthResponse(access_token=token, user_id=user['id'], username=user['username'], is_admin=is_admin)
 
 
 @app.post('/upload', response_model=UploadResponse)
 async def upload(
     file: UploadFile = File(...),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_admin_user),
 ) -> UploadResponse:
     start = perf_counter()
     if not file.filename:
@@ -158,7 +167,7 @@ async def upload(
     metadata = {
         'doc_id': resolved_doc_id,
         'source': file.filename,
-        'owner_id': str(current_user['user_id']),
+        'owner_id': 'admin',
         'tenant_id': None,
         'tags': [],
         'uploaded_at': datetime.now(timezone.utc).isoformat(),
@@ -196,12 +205,13 @@ def ask(req: AskRequest, current_user: dict = Depends(get_current_user)) -> AskR
     start = perf_counter()
     logger.info('Ask requested question_len=%s top_k=%s history_turns=%s user_id=%s', len(req.question), req.top_k, len(req.history), current_user['user_id'])
     filters = req.filters.model_dump(exclude_none=True) if req.filters else {}
-    filters['owner_id'] = str(current_user['user_id'])
+    # Search both admin files and user's own files
     answer, sources = get_rag_service().ask(
         req.question,
         top_k=req.top_k,
         history=req.history,
         filters=filters,
+        owner_ids=['admin', str(current_user['user_id'])],
     )
     elapsed_ms = int((perf_counter() - start) * 1000)
     logger.info('Ask completed sources=%s elapsed_ms=%s', len(sources), elapsed_ms)
@@ -290,8 +300,6 @@ async def chat(
             filters = json.loads(filters_json)
         except json.JSONDecodeError:
             filters = {}
-    
-    filters['owner_id'] = str(current_user['user_id'])
 
     file_path = None
     if file is not None and file.filename:
@@ -328,6 +336,7 @@ async def chat(
         history=history,
         file_path=file_path,
         filters=filters,
+        owner_ids=['admin', str(current_user['user_id'])],
     )
 
     user_message_content = f'{question} (file: {file.filename})' if file is not None and file.filename else question
@@ -363,21 +372,21 @@ def delete_conversation(conversation_id: str, current_user: dict = Depends(get_c
 
 
 @app.get('/files', response_model=list[FileRecord])
-def get_files(current_user: dict = Depends(get_current_user)) -> list[FileRecord]:
+def get_files(current_user: dict = Depends(get_admin_user)) -> list[FileRecord]:
     files = database.get_user_files(current_user['user_id'])
     return [FileRecord(**f) for f in files]
 
 
 @app.post('/files/cleanup-vectors', response_model=CleanupVectorsResponse)
-def cleanup_file_vectors(current_user: dict = Depends(get_current_user)) -> CleanupVectorsResponse:
+def cleanup_file_vectors(current_user: dict = Depends(get_admin_user)) -> CleanupVectorsResponse:
     files = database.get_user_files(current_user['user_id'])
     valid_doc_ids = {str(file['doc_id']) for file in files}
-    result = get_rag_service().cleanup_user_vectors(str(current_user['user_id']), valid_doc_ids)
+    result = get_rag_service().cleanup_user_vectors('admin', valid_doc_ids)
     return CleanupVectorsResponse(**result)
 
 
 @app.delete('/files/{file_id}', response_model=DeleteFileResponse)
-def delete_file(file_id: int, current_user: dict = Depends(get_current_user)) -> DeleteFileResponse:
+def delete_file(file_id: int, current_user: dict = Depends(get_admin_user)) -> DeleteFileResponse:
     file_record = database.delete_file_record(file_id, current_user['user_id'])
     if not file_record:
         raise HTTPException(status_code=404, detail='File not found')

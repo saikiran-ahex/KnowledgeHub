@@ -1,7 +1,7 @@
 import { useMemo, useState, useRef, useEffect } from 'react';
 import { IoMicSharp } from "react-icons/io5";
-import { RiUploadCloud2Fill } from "react-icons/ri";
 import { TiAttachment } from "react-icons/ti";
+import Admin from './Admin';
 
 const API_BASE = '/api';
 const SUPPORTED = '.txt,.md,.pdf,.doc,.docx,.csv,.png,.jpg,.jpeg,.webp';
@@ -71,10 +71,44 @@ function ChatMessage({ role, content, sources, filePreviewUrl, fileName }) {
     </div>
   );
 }
+
 export default function App() {
+  const [isAdminRoute, setIsAdminRoute] = useState(window.location.pathname === '/admin');
+  const [isAdmin, setIsAdmin] = useState(localStorage.getItem('is_admin') === 'true');
+
+  useEffect(() => {
+    const handleLocationChange = () => {
+      setIsAdminRoute(window.location.pathname === '/admin');
+      setIsAdmin(localStorage.getItem('is_admin') === 'true');
+    };
+    
+    window.addEventListener('popstate', handleLocationChange);
+    
+    // Listen for custom navigation events
+    window.addEventListener('navigate', handleLocationChange);
+    
+    return () => {
+      window.removeEventListener('popstate', handleLocationChange);
+      window.removeEventListener('navigate', handleLocationChange);
+    };
+  }, []);
+
+  // Check route on mount and when localStorage changes
+  useEffect(() => {
+    setIsAdminRoute(window.location.pathname === '/admin');
+    setIsAdmin(localStorage.getItem('is_admin') === 'true');
+  }, []);
+
+  if (isAdminRoute) {
+    return <Admin />;
+  }
+
+  return <ChatApp />;
+}
+
+function ChatApp() {
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [username, setUsername] = useState(localStorage.getItem('username') || '');
-  const [page, setPage] = useState('chat');
   const [chats, setChats] = useState(DEFAULT_CHATS);
   const [activeChat, setActiveChat] = useState(DEFAULT_CHAT.id);
   const [question, setQuestion] = useState('');
@@ -83,16 +117,8 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const chatEndRef = useRef(null);
 
-  const [filesToIndex, setFilesToIndex] = useState([]);
-  const [indexResult, setIndexResult] = useState([]);
-  const [indexBusy, setIndexBusy] = useState(false);
   const [imageModels, setImageModels] = useState(DEFAULT_IMAGE_MODELS);
   const [selectedImageModel, setSelectedImageModel] = useState(DEFAULT_IMAGE_MODELS[0].value);
-
-  const [userFiles, setUserFiles] = useState([]);
-  const [filesLoading, setFilesLoading] = useState(false);
-  const [cleanupBusy, setCleanupBusy] = useState(false);
-  const [cleanupMessage, setCleanupMessage] = useState('');
 
   const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -196,12 +222,6 @@ export default function App() {
   }
 
   useEffect(() => {
-    if (token && page === 'admin') {
-      loadUserFiles();
-    }
-  }, [token, page]);
-
-  useEffect(() => {
     if (!token) {
       setChats(DEFAULT_CHATS);
       setActiveChat(DEFAULT_CHAT.id);
@@ -213,6 +233,7 @@ export default function App() {
   function logout() {
     localStorage.removeItem('token');
     localStorage.removeItem('username');
+    localStorage.removeItem('is_admin');
     setToken(null);
     setUsername('');
     setChats(DEFAULT_CHATS);
@@ -233,28 +254,13 @@ export default function App() {
       
       localStorage.setItem('token', data.access_token);
       localStorage.setItem('username', data.username);
+      localStorage.setItem('is_admin', data.is_admin ? 'true' : 'false');
       setToken(data.access_token);
       setUsername(data.username);
       setLoginUsername('');
       setLoginPassword('');
     } catch (err) {
       setAuthError(String(err.message || err));
-    }
-  }
-
-  async function loadUserFiles() {
-    setFilesLoading(true);
-    try {
-      const res = await fetch(`${API_BASE}/files`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await readApiResponse(res);
-      if (!res.ok) throw new Error(data.detail || 'Failed to load files');
-      setUserFiles(data);
-    } catch (err) {
-      console.error('Failed to load files:', err);
-    } finally {
-      setFilesLoading(false);
     }
   }
 
@@ -275,33 +281,6 @@ export default function App() {
       setSelectedImageModel((prev) => (
         DEFAULT_IMAGE_MODELS.some((model) => model.value === prev) ? prev : DEFAULT_IMAGE_MODELS[0].value
       ));
-    }
-  }
-
-  async function cleanupVectors() {
-    setCleanupBusy(true);
-    setCleanupMessage('');
-    try {
-      const res = await fetch(`${API_BASE}/files/cleanup-vectors`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await readApiResponse(res);
-      if (!res.ok) throw new Error(data.detail || 'Failed to clean vectors');
-      const removedCount = new Set([
-        ...(data.text_doc_ids_removed || []),
-        ...(data.image_doc_ids_removed || []),
-      ]).size;
-      setCleanupMessage(
-        removedCount > 0
-          ? `Removed ${removedCount} orphaned vector set${removedCount === 1 ? '' : 's'}.`
-          : 'No orphaned vectors found.'
-      );
-      await loadUserFiles();
-    } catch (err) {
-      setCleanupMessage(`Cleanup failed: ${String(err.message || err)}`);
-    } finally {
-      setCleanupBusy(false);
     }
   }
 
@@ -332,21 +311,6 @@ export default function App() {
     return data.conversation;
   }
 
-  async function deleteUserFile(fileId) {
-    if (!confirm('Delete this file and all its vectors?')) return;
-    try {
-      const res = await fetch(`${API_BASE}/files/${fileId}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await readApiResponse(res);
-      if (!res.ok) throw new Error(data.detail || 'Failed to delete');
-      setUserFiles((prev) => prev.filter((f) => f.id !== fileId));
-    } catch (err) {
-      alert(`Error: ${err.message || err}`);
-    }
-  }
-
   async function newChat() {
     try {
       const conversation = await createConversation();
@@ -357,7 +321,6 @@ export default function App() {
       setChats((prev) => (prev.some((chat) => chat.isDraft) ? prev : [DEFAULT_CHAT, ...prev]));
       setActiveChat(DEFAULT_CHAT.id);
     }
-    setPage('chat');
   }
 
   async function deleteChat(id) {
@@ -383,38 +346,6 @@ export default function App() {
     if (activeChat === id) setActiveChat(nextChats[0].id);
   }
 
-  async function uploadFile(f, idx) {
-    void idx;
-    const fd = new FormData();
-    fd.append('file', f);
-    const res = await fetch(`${API_BASE}/upload`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-      body: fd,
-    });
-    const data = await readApiResponse(res);
-    if (!res.ok) throw new Error(data.detail || 'Upload failed');
-    return data;
-  }
-
-  async function uploadAndIndex() {
-    setIndexBusy(true);
-    setIndexResult([]);
-    try {
-      const output = [];
-      for (let i = 0; i < filesToIndex.length; i += 1) {
-        const data = await uploadFile(filesToIndex[i], i);
-        output.push(data);
-      }
-      setIndexResult(output);
-      setFilesToIndex([]);
-    } catch (err) {
-      setIndexResult([{ filename: 'error', chunks_indexed: 0, error: String(err.message || err) }]);
-    } finally {
-      setIndexBusy(false);
-    }
-  }
-
   async function sendMessage() {
     const q = question.trim();
     if (!q || !currentChat) return;
@@ -423,7 +354,6 @@ export default function App() {
     setBusy(true);
     setQuestion('');
 
-    // const userMsg = { role: 'user', content: file ? `${q} (file: ${file.name})` : q };
     const isImage = file && /\.(png|jpe?g|webp)$/i.test(file.name);
     const filePreviewUrl = isImage ? URL.createObjectURL(file) : null;
     const userMsg = { role: 'user', content: q, filePreviewUrl, fileName: file?.name };
@@ -535,6 +465,19 @@ export default function App() {
           <button onClick={() => setIsRegister(!isRegister)} className="toggleAuthBtn">
             {isRegister ? 'Already have an account? Login' : "Don't have an account? Register"}
           </button>
+          
+          <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid #2a2a2a' }}>
+            <button 
+              onClick={() => {
+                window.history.pushState({}, '', '/admin');
+                window.dispatchEvent(new Event('navigate'));
+              }} 
+              className="toggleAuthBtn"
+              style={{ marginTop: '0' }}
+            >
+              🔐 Login as Admin
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -552,11 +495,8 @@ export default function App() {
           {chats.map((chat) => (
             <div
               key={chat.id}
-              className={`chatItem ${activeChat === chat.id && page === 'chat' ? 'active' : ''}`}
-              onClick={() => {
-                setActiveChat(chat.id);
-                setPage('chat');
-              }}
+              className={`chatItem ${activeChat === chat.id ? 'active' : ''}`}
+              onClick={() => setActiveChat(chat.id)}
             >
               <span className="chatTitle">{chat.title}</span>
               <button
@@ -584,159 +524,77 @@ export default function App() {
         <header className="header">
           <button className="menuBtn" onClick={() => setSidebarOpen(!sidebarOpen)}>menu</button>
           <h1>✨ KnowledgeHub</h1>
-          <div className="headerActions">
-            <button className={`headerBtn ${page === 'admin' ? 'active' : ''}`} onClick={() => setPage('admin')}>
-              ⚙️ Admin
-            </button>
-          </div>
         </header>
 
-        {page === 'chat' ? (
-          <>
-            <div className="chatWindow">
-              {history.length === 0 ? (
-                <div className="emptyState">
-                  <div className="emptyIcon">✨</div>
-                  <h3>Welcome to KnowledgeHub</h3>
-                  <p>Your intelligent document assistant</p>
-                  <div className="exampleQuestions">
-                    <p className="exampleLabel">Try asking:</p>
-                    {EXAMPLE_QUESTIONS.map((q, i) => (
-                      <button key={i} className="exampleBtn" onClick={() => setQuestion(q)}>
-                        {q}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
+        <div className="chatWindow">
+          {history.length === 0 ? (
+            <div className="emptyState">
+              <div className="emptyIcon">✨</div>
+              <h3>Welcome to KnowledgeHub</h3>
+              <p>Your intelligent document assistant</p>
+              <div className="exampleQuestions">
+                <p className="exampleLabel">Try asking:</p>
+                {EXAMPLE_QUESTIONS.map((q, i) => (
+                  <button key={i} className="exampleBtn" onClick={() => setQuestion(q)}>
+                    {q}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
 
-              {history.map((m, i) => <ChatMessage key={i} role={m.role} content={m.content} sources={m.sources} filePreviewUrl={m.filePreviewUrl} fileName={m.fileName} />)}
-              {busy && (
-                <div className="msg assistant">
-                  <div className="botName">Zill</div>
-                  <div className="bubble">
-                    <div className="loader">
-                      <span></span>
-                      <span></span>
-                      <span></span>
-                    </div>
-                  </div>
+          {history.map((m, i) => <ChatMessage key={i} role={m.role} content={m.content} sources={m.sources} filePreviewUrl={m.filePreviewUrl} fileName={m.fileName} />)}
+          {busy && (
+            <div className="msg assistant">
+              <div className="botName">Zill</div>
+              <div className="bubble">
+                <div className="loader">
+                  <span></span>
+                  <span></span>
+                  <span></span>
                 </div>
-              )}
-              <div ref={chatEndRef} />
+              </div>
             </div>
+          )}
+          <div ref={chatEndRef} />
+        </div>
 
-            <div className="inputArea">
-              {file ? <div className="fileChip">📎 {file.name} <button onClick={() => setFile(null)}>✕</button></div> : null}
-              <div className="chatInput">
-                <label className="fileBtn">
-                  <TiAttachment />
-                  <input type="file" accept={SUPPORTED} onChange={(e) => setFile(e.target.files?.[0] || null)} style={{ display: 'none' }} />
-                </label>
-                <button 
-                  onClick={toggleListening} 
-                  className={`micBtn ${isListening ? 'listening' : ''}`}
-                  title="Voice input"
-                >
-                  <IoMicSharp />
-                </button>
-                {isAdhocImage ? (
-                  <select
-                    value={selectedImageModel}
-                    onChange={(e) => setSelectedImageModel(e.target.value)}
-                    className="imageModelSelect"
-                    title="Image model for this ad-hoc image"
-                  >
-                    {imageModels.map((model) => (
-                      <option key={model.value} value={model.value}>{model.label}</option>
-                    ))}
-                  </select>
-                ) : null}
-                <textarea
-                  rows={1}
-                  placeholder={isListening ? 'Listening...' : 'Type your message...'}
-                  value={question}
-                  onChange={(e) => setQuestion(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                />
-                <button onClick={sendMessage} disabled={!canSend} className="sendBtn">{busy ? '⏳' : '➤'}</button>
-              </div>
-            </div>
-          </>
-        ) : (
-          <div className="adminPage">
-            <button className="closeBtn" onClick={() => setPage('chat')}>✕</button>
-            <div className="adminContainer">
-              <div className="adminSection">
-                <h2>Upload Files</h2>
-                <p>Upload files to index and search</p>
-                <p className="uploadInfo">Max file size: {MAX_UPLOAD_SIZE_MB}MB per file</p>
-                
-                <input type="file" multiple accept={SUPPORTED} onChange={(e) => setFilesToIndex(Array.from(e.target.files || []))} className="fileInput" />
-                
-                {filesToIndex.length > 0 && (
-                  <div className="fileList">
-                    {filesToIndex.map((f, i) => <div key={i} className="fileItem">{f.name}</div>)}
-                  </div>
-                )}
-                
-                <button onClick={uploadAndIndex} disabled={filesToIndex.length === 0 || indexBusy} className="indexBtn">
-                  {indexBusy ? 'Indexing...' : 'Upload Documents'}
-                </button>
-                
-                {indexResult.length > 0 && (
-                  <div className="uploadResults">
-                    {indexResult.map((row, idx) => (
-                      <div key={idx} className={`uploadResultItem ${row.error ? 'error' : 'success'}`}>
-                        <div className="resultIcon">{row.error ? '❌' : '✅'}</div>
-                        <div className="resultContent">
-                          <div className="resultTitle">
-                            {row.error ? 'Upload Failed' : 'Successfully Uploaded'}
-                          </div>
-                          <div className="resultDetails">
-                            {row.error ? `${row.filename || 'File'}: ${row.error}` : `${row.filename} • ${row.chunks_indexed} chunks indexed`}
-                          </div>
-                          {!row.error && row.doc_id && <div className="resultMeta">Document ID: {row.doc_id}</div>}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-              
-              <div className="adminSection">
-                <h2>📂 My Files</h2>
-                <p>Manage uploaded files</p>
-                <button onClick={cleanupVectors} disabled={cleanupBusy} className="indexBtn">
-                  {cleanupBusy ? 'Cleaning up...' : 'Remove unused data'}
-                </button>
-                {cleanupMessage && <p className="uploadInfo">{cleanupMessage}</p>}
-                
-                {filesLoading ? (
-                  <div className="loading">Loading...</div>
-                ) : userFiles.length === 0 ? (
-                  <div className="emptyFiles">No files uploaded yet</div>
-                ) : (
-                  <div className="filesTable">
-                    {userFiles.map((f) => (
-                      <div key={f.id} className="fileRow">
-                        <div className="fileInfo">
-                          <div className="fileName">{f.filename}</div>
-                          <div className="fileMeta">
-                            {f.file_type} • {f.chunks_indexed} chunks • {new Date(f.uploaded_at).toLocaleDateString()}
-                          </div>
-                        </div>
-                        <button onClick={() => deleteUserFile(f.id)} className="deleteFileBtn">
-                          🗑️ Delete
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
+        <div className="inputArea">
+          {file ? <div className="fileChip">📎 {file.name} <button onClick={() => setFile(null)}>✕</button></div> : null}
+          <div className="chatInput">
+            <label className="fileBtn">
+              <TiAttachment />
+              <input type="file" accept={SUPPORTED} onChange={(e) => setFile(e.target.files?.[0] || null)} style={{ display: 'none' }} />
+            </label>
+            <button 
+              onClick={toggleListening} 
+              className={`micBtn ${isListening ? 'listening' : ''}`}
+              title="Voice input"
+            >
+              <IoMicSharp />
+            </button>
+            {isAdhocImage ? (
+              <select
+                value={selectedImageModel}
+                onChange={(e) => setSelectedImageModel(e.target.value)}
+                className="imageModelSelect"
+                title="Image model for this ad-hoc image"
+              >
+                {imageModels.map((model) => (
+                  <option key={model.value} value={model.value}>{model.label}</option>
+                ))}
+              </select>
+            ) : null}
+            <textarea
+              rows={1}
+              placeholder={isListening ? 'Listening...' : 'Type your message...'}
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              onKeyDown={handleKeyDown}
+            />
+            <button onClick={sendMessage} disabled={!canSend} className="sendBtn">{busy ? '⏳' : '➤'}</button>
           </div>
-        )}
+        </div>
       </main>
     </div>
   );

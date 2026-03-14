@@ -523,7 +523,7 @@ class RagService:
 
         encoded = base64.b64encode(image_path.read_bytes()).decode('utf-8')
         image_url = f'data:{mime};base64,{encoded}'
-        if image_model=='free model':
+        if image_model=='nemotron-free':
             _client=OpenAI(api_key=self.settings.openrouter_api_key, base_url=self.settings.openrouter_base_url)
             _model=self.settings.openrouter_model
             logger.info('Using OpenRouter for image analysis model=%s', _model)

@@ -186,14 +186,14 @@ export default function Admin() {
         <h1>🔐 Admin Panel</h1>
         <div className="adminHeaderActions">
           <span>👤 {username}</span>
-          <button onClick={() => window.location.href = '/'} className="headerBtn">Home</button>
+          <button onClick={() => window.location.href = '/'} className="headerBtn">Chat</button>
           <button onClick={logout} className="headerBtn">Logout</button>
         </div>
       </header>
 
       <main className="adminMain">
         <section className="adminSection">
-          <h2>📤 Upload Files</h2>
+          <h2>Upload Files</h2>
           <p>Upload files that all users can query</p>
           <label className="uploadBtn">
             {uploading ? 'Uploading...' : 'Choose File'}

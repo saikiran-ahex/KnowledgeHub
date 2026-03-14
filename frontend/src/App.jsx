@@ -9,7 +9,7 @@ const MAX_UPLOAD_SIZE_MB = 30;
 const DEFAULT_IMAGE_MODELS = [
   { value: 'gpt-5-mini', label: 'GPT-5 Mini' },
   { value: 'gpt-4.1-mini', label: 'GPT-4.1 Mini' },
-  {value:'free model', label: 'Nemotron (Free )'}
+  { value: 'nemotron-free', label: 'Nemotron (Free)' }
 ];
 
 const EXAMPLE_QUESTIONS = [

@@ -186,7 +186,6 @@ export default function Admin() {
         <h1>🔐 Admin Panel</h1>
         <div className="adminHeaderActions">
           <span>👤 {username}</span>
-          <button onClick={() => window.location.href = '/'} className="headerBtn">Chat</button>
           <button onClick={logout} className="headerBtn">Logout</button>
         </div>
       </header>
@@ -222,7 +221,7 @@ export default function Admin() {
                   <div className="fileInfo">
                     <span className="fileName">📄 {file.filename}</span>
                     <span className="fileDetails">
-                      {file.chunks_indexed} chunks • {file.file_type} • {new Date(file.uploaded_at).toLocaleDateString()}
+                      {file.file_type} • {new Date(file.uploaded_at).toLocaleDateString()}
                     </span>
                   </div>
                   <button onClick={() => handleDelete(file.id)} className="deleteFileBtn">Delete</button>

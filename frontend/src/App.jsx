@@ -357,6 +357,9 @@ function ChatApp() {
     const isImage = file && /\.(png|jpe?g|webp)$/i.test(file.name);
     const filePreviewUrl = isImage ? URL.createObjectURL(file) : null;
     const userMsg = { role: 'user', content: q, filePreviewUrl, fileName: file?.name };
+    const capturedFile = file;
+    setFile(null);
+
     
     const historyForApi = history.map((m) => ({ role: m.role, content: m.content }));
     let targetConversationId = currentChat.id;
@@ -392,8 +395,8 @@ function ChatApp() {
       fd.append('conversation_id', targetConversationId);
       fd.append('history_json', JSON.stringify(historyForApi));
 
-      if (file) {
-        fd.append('file', file);
+      if (capturedFile) {
+        fd.append('file', capturedFile);
         if (isAdhocImage && selectedImageModel) {
           fd.append('image_model', selectedImageModel);
         }
@@ -420,7 +423,6 @@ function ChatApp() {
             : c
         )
       );
-      setFile(null);
     } catch (err) {
       setChats((prev) =>
         prev.map((c) =>

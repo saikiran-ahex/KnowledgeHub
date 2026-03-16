@@ -577,7 +577,7 @@ function ChatApp() {
           <div className="chatInput">
             <label className="fileBtn">
               <TiAttachment />
-              <input type="file" accept={SUPPORTED} onChange={(e) => setFile(e.target.files?.[0] || null)} style={{ display: 'none' }} />
+              <input type="file" accept={SUPPORTED} onChange={(e) => { setFile(e.target.files?.[0] || null); e.target.value = ''; }} style={{ display: 'none' }} />
             </label>
             <button 
               onClick={toggleListening} 

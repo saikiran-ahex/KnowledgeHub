@@ -48,9 +48,10 @@ function ChatMessage({ role, content, sources, filePreviewUrl, fileName }) {
       <div className={`messageStack ${role}`} style={{ display: 'flex', flexDirection: 'column', alignItems: role === 'assistant' ? 'flex-start' : 'flex-end', gap: '6px' }}>
         {filePreviewUrl && (
           <img
+            className="chatImagePreview"
             src={filePreviewUrl}
             alt={fileName || 'uploaded image'}
-            style={{ maxWidth: '220px', maxHeight: '180px', borderRadius: '12px', display: 'block' }}
+            style={{ display: 'block' }}
           />
         )}
         {content && (

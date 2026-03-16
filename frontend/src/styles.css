@@ -263,6 +263,16 @@ body { background: #000; color: #fff; height: 100vh; overflow: hidden; }
 .messageStack.assistant {
   align-items: flex-start;
 }
+.chatImagePreview {
+  width: min(420px, 56vw);
+  max-width: 100%;
+  max-height: 320px;
+  object-fit: contain;
+  border-radius: 16px;
+  border: 1px solid #2a2a2a;
+  background: #111;
+  box-shadow: var(--shadow-sm);
+}
 .avatar {
   width: 40px;
   height: 40px;
@@ -283,7 +293,8 @@ body { background: #000; color: #fff; height: 100vh; overflow: hidden; }
   line-height: 1.7;
   white-space: pre-wrap;
   word-wrap: break-word;
-  width: fit-content;
+  display: inline-block;
+  width: auto;
   max-width: min(72ch, 72%);
   box-shadow: var(--shadow-sm);
 }

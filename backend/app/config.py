@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     app_host: str = '0.0.0.0'
     app_port: int = 8000
     database_url: str = Field(default='postgresql://knowledgehub:knowledgehub@postgres:5432/knowledgehub')
+    admin_username: str = Field(default='admin')
+    admin_password: str = Field(default='')
 
     upload_dir: Path = Path('data/uploads')
     max_upload_size_mb: int = 30
@@ -58,10 +60,6 @@ class Settings(BaseSettings):
     @property
     def adhoc_image_model_options(self) -> tuple[dict[str, str], ...]:
         return ADHOC_IMAGE_MODEL_OPTIONS
-
-    @property
-    def adhoc_image_models(self) -> tuple[str, ...]:
-        return tuple(str(item['value']) for item in ADHOC_IMAGE_MODEL_OPTIONS)
 
 
 @lru_cache(maxsize=1)

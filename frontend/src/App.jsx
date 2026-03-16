@@ -45,7 +45,7 @@ function ChatMessage({ role, content, sources, filePreviewUrl, fileName }) {
   return (
     <div className={`msg ${role}`}>
       {role === 'assistant' && <div className="botName">Zill</div>}
-      <div className="bubble" style={{ background: 'transparent', boxShadow: 'none', padding: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
+      <div className={`messageStack ${role}`} style={{ display: 'flex', flexDirection: 'column', alignItems: role === 'assistant' ? 'flex-start' : 'flex-end', gap: '6px' }}>
         {filePreviewUrl && (
           <img
             src={filePreviewUrl}
@@ -56,13 +56,8 @@ function ChatMessage({ role, content, sources, filePreviewUrl, fileName }) {
         {content && (
           <div
             className="bubble"
-          style={{
-          margin: 0,
-          maxWidth: "260px",
-          width: "fit-content",
-          alignSelf: "flex-end"
-          }}
-        >
+            style={{ margin: 0 }}
+          >
             <p style={{ margin: 0, wordBreak: "break-word" }}>{content}</p>
           </div>
         )}

@@ -68,6 +68,8 @@ def init_db():
                     FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
                 )'''
             )
+            c.execute('ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE')
+            c.execute('ALTER TABLE files ADD COLUMN IF NOT EXISTS content_hash TEXT')
         conn.commit()
 
 
@@ -97,6 +99,23 @@ def get_user_by_username(username: str):
         with conn.cursor() as c:
             c.execute('SELECT * FROM users WHERE username = %s', (username,))
             return c.fetchone()
+
+
+def upsert_admin_user(username: str, password_hash: str) -> int:
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute(
+                '''INSERT INTO users (username, password_hash, is_admin, created_at)
+                   VALUES (%s, %s, TRUE, %s)
+                   ON CONFLICT (username) DO UPDATE SET
+                       password_hash = EXCLUDED.password_hash,
+                       is_admin = TRUE
+                   RETURNING id''',
+                (username, password_hash, datetime.now(timezone.utc).isoformat()),
+            )
+            user_id = c.fetchone()['id']
+        conn.commit()
+        return int(user_id)
 
 
 def sha256_bytes(payload: bytes) -> str:
@@ -151,10 +170,40 @@ def get_all_admin_files():
             return [dict(row) for row in c.fetchall()]
 
 
+def get_admin_file_by_id(file_id: int):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute(
+                '''SELECT f.* FROM files f
+                   JOIN users u ON f.user_id = u.id
+                   WHERE f.id = %s AND u.is_admin = TRUE''',
+                (file_id,),
+            )
+            row = c.fetchone()
+            return dict(row) if row else None
+
+
 def delete_file_record(file_id: int, user_id: int):
     with get_db() as conn:
         with conn.cursor() as c:
             c.execute('SELECT * FROM files WHERE id = %s AND user_id = %s', (file_id, user_id))
+            file = c.fetchone()
+            if file:
+                c.execute('DELETE FROM files WHERE id = %s', (file_id,))
+                conn.commit()
+                return dict(file)
+    return None
+
+
+def delete_admin_file_record(file_id: int):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute(
+                '''SELECT f.* FROM files f
+                   JOIN users u ON f.user_id = u.id
+                   WHERE f.id = %s AND u.is_admin = TRUE''',
+                (file_id,),
+            )
             file = c.fetchone()
             if file:
                 c.execute('DELETE FROM files WHERE id = %s', (file_id,))

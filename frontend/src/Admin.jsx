@@ -16,13 +16,21 @@ export default function Admin() {
   const [isAdmin, setIsAdmin] = useState(localStorage.getItem('is_admin') === 'true');
   const [files, setFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
+  const [uploadResults, setUploadResults] = useState([]);
   const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [authError, setAuthError] = useState('');
+  const [notification, setNotification] = useState(null);
+  const fileInputRef = useState(null);
 
   useEffect(() => {
     if (token && isAdmin) loadFiles();
   }, [token, isAdmin]);
+
+  function showNotification(message, type = 'success') {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 4000);
+  }
 
   function logout() {
     localStorage.removeItem('token');
@@ -79,25 +87,34 @@ export default function Admin() {
   }
 
   async function handleUpload(e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const selectedFiles = Array.from(e.target.files || []);
+    if (selectedFiles.length === 0) return;
 
     setUploading(true);
+    setUploadResults([]);
     try {
-      const fd = new FormData();
-      fd.append('file', file);
-      const res = await fetch(`${API_BASE}/upload`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: fd,
-      });
-      const data = await readApiResponse(res);
-      if (!res.ok) throw new Error(data.detail || 'Upload failed');
-      
-      alert(`Uploaded: ${data.filename} (${data.chunks_indexed} chunks)`);
+      const results = [];
+      for (let i = 0; i < selectedFiles.length; i++) {
+        const file = selectedFiles[i];
+        try {
+          const fd = new FormData();
+          fd.append('file', file);
+          const res = await fetch(`${API_BASE}/upload`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+            body: fd,
+          });
+          const data = await readApiResponse(res);
+          if (!res.ok) throw new Error(data.detail || 'Upload failed');
+          results.push({ ...data, error: null });
+        } catch (err) {
+          results.push({ filename: file.name, error: String(err.message || err), chunks_indexed: 0 });
+        }
+      }
+      setUploadResults(results);
       await loadFiles();
     } catch (err) {
-      alert(`Error: ${err.message || err}`);
+      setUploadResults([{ filename: 'error', error: String(err.message || err), chunks_indexed: 0 }]);
     } finally {
       setUploading(false);
       e.target.value = '';
@@ -105,7 +122,6 @@ export default function Admin() {
   }
 
   async function handleDelete(fileId) {
-    if (!confirm('Delete this file?')) return;
     try {
       const res = await fetch(`${API_BASE}/files/${fileId}`, {
         method: 'DELETE',
@@ -114,15 +130,14 @@ export default function Admin() {
       const data = await readApiResponse(res);
       if (!res.ok) throw new Error(data.detail || 'Delete failed');
       
-      alert('File deleted successfully');
+      showNotification('File deleted successfully', 'success');
       await loadFiles();
     } catch (err) {
-      alert(`Error: ${err.message || err}`);
+      showNotification(`Error: ${err.message || err}`, 'error');
     }
   }
 
   async function handleCleanup() {
-    if (!confirm('Clean orphaned vectors?')) return;
     try {
       const res = await fetch(`${API_BASE}/files/cleanup-vectors`, {
         method: 'POST',
@@ -131,10 +146,10 @@ export default function Admin() {
       const data = await readApiResponse(res);
       if (!res.ok) throw new Error(data.detail || 'Cleanup failed');
       
-      alert(data.message || 'Cleanup completed');
+      showNotification(data.message || 'Cleanup completed', 'success');
       await loadFiles();
     } catch (err) {
-      alert(`Error: ${err.message || err}`);
+      showNotification(`Error: ${err.message || err}`, 'error');
     }
   }
 
@@ -182,6 +197,13 @@ export default function Admin() {
 
   return (
     <div className="adminPage">
+      {notification && (
+        <div className={`notification ${notification.type}`}>
+          <span>{notification.type === 'success' ? '✅' : '❌'}</span>
+          <span>{notification.message}</span>
+          <button onClick={() => setNotification(null)}>✕</button>
+        </div>
+      )}
       <header className="adminHeader">
         <h1>🔐 Admin Panel</h1>
         <div className="adminHeaderActions">
@@ -193,27 +215,53 @@ export default function Admin() {
       <main className="adminMain">
         <section className="adminSection">
           <h2>Upload Files</h2>
-          <p>Upload files that all users can query</p>
+          <p>Upload files that all users can search and chat with</p>
+          <p className="uploadInfo">Max upload size: {MAX_UPLOAD_SIZE_MB}MB per file</p>
+
           <label className="uploadBtn">
-            {uploading ? 'Uploading...' : 'Choose File'}
+            {uploading ? 'Uploading...' : 'Choose & Upload Files'}
             <input
               type="file"
+              multiple
               accept={SUPPORTED}
               onChange={handleUpload}
               disabled={uploading}
               style={{ display: 'none' }}
             />
           </label>
+
+          {uploadResults.length > 0 && (
+            <div className="uploadResults">
+              {uploadResults.map((row, idx) => (
+                <div key={idx} className={`uploadResultItem ${row.error ? 'error' : 'success'}`}>
+                  <div className="resultIcon">
+                    {row.error ? '❌' : '✅'}
+                  </div>
+                  <div className="resultContent">
+                    <div className="resultTitle">
+                      {row.error ? 'Upload Failed' : 'Upload Complete'}
+                    </div>
+                    <div className="resultDetails">
+                      {row.error
+                        ? `${row.filename || 'File'}: ${row.error}`
+                        : `${row.filename} • ${row.chunks_indexed} sections ready`
+                      }
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
 
         <section className="adminSection">
           <div className="sectionHeader">
-            <h2>📁 My Files ({files.length})</h2>
-            <button onClick={handleCleanup} className="cleanupBtn">Clean Orphaned Vectors</button>
+            <h2>📁 Shared Files ({files.length})</h2>
+            <button onClick={handleCleanup} className="cleanupBtn">Sync Library</button>
           </div>
           
           {files.length === 0 ? (
-            <p className="emptyText">No files uploaded yet</p>
+            <p className="emptyText">No shared files uploaded yet</p>
           ) : (
             <div className="fileList">
               {files.map((file) => (

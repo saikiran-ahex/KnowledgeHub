@@ -1,74 +1,95 @@
 # KnowledgeHub
 
-Multimodal RAG chatbot with user authentication, per-user document isolation, persistent conversations, and Qdrant-backed retrieval.
+KnowledgeHub is a multimodal RAG application with:
 
-## Overview
+- FastAPI backend
+- React frontend
+- PostgreSQL for app data
+- Qdrant for retrieval data
+- JWT authentication
+- Admin-managed shared document library
+- Persistent per-user conversations
 
-- Backend: FastAPI + LangChain
-- Frontend: React
-- Vector database: Qdrant
-- Database: PostgreSQL
-- Text embeddings: OpenAI embeddings
-- Image embeddings: CLIP (`clip-ViT-B-32`)
-- Optional reranking: Cohere
-- Auth: JWT
+## Current Flow
+
+### Roles
+
+- Regular users can register, log in, chat, attach ad-hoc files to a single message, and access only their own conversation history.
+- Admin users can do everything regular users can, plus open `/admin` to upload, list, delete, and sync shared library files.
+
+### Shared Library Model
+
+- Indexed knowledge-base files are admin-only.
+- Files uploaded from the admin panel are stored in PostgreSQL and indexed into Qdrant with `owner_id='admin'`.
+- `/ask` and `/chat` retrieve only from that shared admin-owned corpus.
+- Regular users do not have personal indexed file libraries.
+
+### Ad-hoc Files
+
+- `/chat` and `/ask-with-file` accept temporary file attachments.
+- Those files are used only for that request.
+- They are not persisted in PostgreSQL as library files.
+- They are not added to the shared Qdrant corpus.
+- Image attachments can optionally use a selectable `image_model`.
+
+### Conversations
+
+- Conversations are stored in PostgreSQL.
+- They are scoped by `user_id`.
+- Refreshing the browser or logging in again restores prior chats for that user.
+
+### Admin Bootstrap
+
+- Admin access is not created by username convention anymore.
+- On backend startup, if `ADMIN_PASSWORD` is set, the app creates or updates the configured admin user from:
+  - `ADMIN_USERNAME`
+  - `ADMIN_PASSWORD`
+- Registration always creates a non-admin user.
+
+## Architecture
+
+### Backend
+
+- FastAPI app: [backend/app/main.py](/c:/Ahex/KnowledgeHub/backend/app/main.py)
+- Config: [backend/app/config.py](/c:/Ahex/KnowledgeHub/backend/app/config.py)
+- Database layer: [backend/app/database.py](/c:/Ahex/KnowledgeHub/backend/app/database.py)
+- RAG service: [backend/app/services/rag_service.py](/c:/Ahex/KnowledgeHub/backend/app/services/rag_service.py)
+
+### Frontend
+
+- User chat app: [frontend/src/App.jsx](/c:/Ahex/KnowledgeHub/frontend/src/App.jsx)
+- Admin panel: [frontend/src/Admin.jsx](/c:/Ahex/KnowledgeHub/frontend/src/Admin.jsx)
+
+### Storage
+
+- PostgreSQL stores:
+  - users
+  - files
+  - conversations
+  - conversation messages
+- Qdrant stores:
+  - indexed text retrieval points
+  - indexed image retrieval points
+- Local disk stores:
+  - uploaded files under `backend/data/uploads/`
+  - Qdrant data under `backend/data/qdrant/`
 
 ## Features
 
-- User registration and login
-- Admin role with dedicated admin panel at `/admin`
-- Admin can upload files that all users can query
-- Per-user file isolation (removed for regular users)
-- Persistent chat conversations stored in PostgreSQL
-- Text and image retrieval
-- Ad-hoc chat file upload for a single message
-- File deletion with vector cleanup (admin only)
-- Orphaned vector cleanup from the UI (admin only)
+- Username/password authentication
+- JWT-based API auth
+- Admin panel at `/admin`
+- Admin-only shared file uploads
+- Duplicate upload prevention by `content_hash`
+- Multi-file upload from admin UI
+- Shared retrieval across all users
+- Persistent conversations
+- Ad-hoc file chat
+- Ad-hoc image model selection
+- Source attribution in answers
+- Library sync for stale/orphaned Qdrant data
 
-## Current Behavior
-
-### Authentication
-
-- Users register and log in with username and password
-- JWT tokens are stored in browser `localStorage`
-- Username `admin` automatically gets admin privileges on registration
-- Admin users access the admin panel at `http://localhost:8502/admin`
-- All chat conversations are scoped to the authenticated user
-
-### Admin Panel
-
-- Accessible at `/admin` route
-- Only users with admin role can access
-- Upload files that become available to all users
-- View and manage all uploaded files
-- Delete files and clean orphaned vectors
-- Files uploaded by admin have `owner_id='admin'`
-
-### Uploads
-
-- Supported files: `.txt`, `.md`, `.pdf`, `.doc`, `.docx`, `.csv`, `.png`, `.jpg`, `.jpeg`, `.webp`
-- Admin uploads are stored in `backend/data/uploads/{admin_user_id}/`
-- Files are indexed into Qdrant with `owner_id='admin'`
-- Regular users cannot upload files (upload functionality removed from main UI)
-
-### Chat
-
-- `/chat` searches both admin-uploaded files and user's own files (if any)
-- Chat conversations are persisted in PostgreSQL and restored on login
-- New conversations are created automatically
-- Ad-hoc chat file uploads are used only for that request and are not persistently indexed
-- Users can query all files uploaded by admin
-
-### My Files (Admin Only)
-
-- Shows the admin's uploaded files
-- Deleting a file removes:
-  - the PostgreSQL file record
-  - the physical uploaded file
-  - associated vectors in Qdrant
-- `Clean Orphaned Vectors` removes vectors owned by admin whose `doc_id` no longer exists in the `files` table
-
-## API Endpoints
+## API
 
 ### Auth
 
@@ -79,18 +100,11 @@ Multimodal RAG chatbot with user authentication, per-user document isolation, pe
 
 - `GET /health`
 
-### Files
+### Image Models
 
-- `POST /upload` (admin only)
-- `GET /files` (admin only)
-- `POST /files/cleanup-vectors` (admin only)
-- `DELETE /files/{file_id}` (admin only)
+- `GET /image-models`
 
-### Conversations
-
-- `GET /conversations`
-- `POST /conversations`
-- `DELETE /conversations/{conversation_id}`
+Returns the backend allowlist used by the frontend image-model dropdown.
 
 ### Retrieval / Chat
 
@@ -98,26 +112,26 @@ Multimodal RAG chatbot with user authentication, per-user document isolation, pe
 - `POST /ask-with-file`
 - `POST /chat`
 
-All authenticated endpoints require:
+Notes:
 
-```http
-Authorization: Bearer <jwt_token>
-```
+- `/ask` uses the shared admin-indexed corpus.
+- `/chat` uses the shared admin-indexed corpus plus an optional ad-hoc attached file for that request.
+- `/ask-with-file` is a direct ad-hoc retrieval route and does not require login.
 
-## Stored Metadata
+### Conversations
 
-Indexed documents store metadata such as:
+- `GET /conversations`
+- `POST /conversations`
+- `DELETE /conversations/{conversation_id}`
 
-- `doc_id`
-- `chunk_id`
-- `source`
-- `uploaded_at`
-- `file_type`
-- `content_hash`
-- `tags`
-- `owner_id` (set to 'admin' for admin uploads)
-- `tenant_id`
-- `page_no`
+### Admin File Management
+
+- `POST /upload`
+- `GET /files`
+- `POST /files/cleanup-vectors`
+- `DELETE /files/{file_id}`
+
+These routes require an admin JWT.
 
 ## Database Schema
 
@@ -132,7 +146,7 @@ Indexed documents store metadata such as:
 ### `files`
 
 - `id`
-- `user_id` (references admin user for admin uploads)
+- `user_id`
 - `doc_id`
 - `filename`
 - `file_path`
@@ -141,9 +155,9 @@ Indexed documents store metadata such as:
 - `chunks_indexed`
 - `uploaded_at`
 
-Unique rule:
+Unique index:
 
-- `(user_id, content_hash)` must be unique when `content_hash` is present
+- `(user_id, content_hash)` where `content_hash IS NOT NULL`
 
 ### `conversations`
 
@@ -162,38 +176,94 @@ Unique rule:
 - `sources_json`
 - `created_at`
 
+## Retrieval Metadata
+
+Indexed payloads may include:
+
+- `doc_id`
+- `chunk_id`
+- `source`
+- `uploaded_at`
+- `file_type`
+- `content_hash`
+- `tags`
+- `owner_id`
+- `tenant_id`
+- `page_no`
+
+Text retrieval payloads are stored with metadata nested under `metadata.*`.
+Image retrieval payloads use top-level payload keys.
+
+## Supported File Types
+
+- Text/docs: `.txt`, `.md`, `.pdf`, `.doc`, `.docx`, `.csv`
+- Images: `.png`, `.jpg`, `.jpeg`, `.webp`
+
+## Configuration
+
+See [.env.example](/c:/Ahex/KnowledgeHub/.env.example).
+
+Important variables:
+
+```env
+DATABASE_URL=postgresql://knowledgehub:knowledgehub@postgres:5432/knowledgehub
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=change-this-admin-password
+OPENAI_API_KEY=...
+JWT_SECRET_KEY=change-this-secret-key-in-production
+QDRANT_URL=http://qdrant:6333
+```
+
+Optional model configuration:
+
+```env
+OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_MODEL=gpt-5-mini-2025-08-07
+EMBEDDING_MODEL=text-embedding-3-large
+OPENROUTER_API_KEY=...
+OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
+COHERE_API_KEY=...
+COHERE_RERANK_MODEL=rerank-v3.5
+CLIP_MODEL_NAME=clip-ViT-B-32
+```
+
 ## Run
 
-Start the stack:
+Start everything:
 
 ```bash
 docker compose up --build
 ```
 
-Open:
+Services:
 
 - Frontend: `http://localhost:8502`
-- Admin Panel: `http://localhost:8502/admin`
-- Backend docs: `http://localhost:8001/docs`
+- Admin: `http://localhost:8502/admin`
+- Backend API/docs: `http://localhost:8001/docs`
+- PostgreSQL: `localhost:5432`
 
-Migration note:
+Current Docker setup:
 
-- Existing SQLite data in `backend/data/app.db` is not migrated automatically into PostgreSQL
-- If you need old users, chats, or file records, migrate them before switching environments
-- A helper script is available: `python -m app.migrate_sqlite_to_postgres`
-- If upgrading from a previous version, run: `python -m app.migrate_add_admin` to add admin support
+- `postgres` uses Docker volume `postgres_data`
+- `qdrant` stores data in `backend/data/qdrant`
+- `backend` bind-mounts `backend/data` and `backend/app`
+- `frontend` runs Vite in a Node container on port `8502`
 
 ## Persistence
 
-Persistent application data lives in:
+Persisted state lives in:
 
-- PostgreSQL data: Docker volume `postgres_data`
+- PostgreSQL volume: `postgres_data`
 - Uploaded files: `backend/data/uploads/`
 - Qdrant storage: `backend/data/qdrant/`
 
-## Fresh Reset
+`docker compose up --build` rebuilds containers but does not delete those persisted stores.
 
-This removes all users, chats, files, and vectors:
+## Reset Options
+
+### Full Reset
+
+Removes users, conversations, uploaded files, and Qdrant data:
 
 ```powershell
 docker compose down
@@ -203,35 +273,50 @@ docker volume rm knowledgehub_postgres_data
 docker compose up --build
 ```
 
-## Startup Notes
+### Keep Users And Chats, Clear Library Data
 
-- Backend initializes PostgreSQL tables and Qdrant collections on startup
-- The first startup after a reset can take longer because collections are recreated
-- Wait for backend startup to complete before sending the first chat request
-- To create an admin user, register with username `admin` - this automatically grants admin privileges
-- Admin users can then access the admin panel at `/admin`
+Removes uploaded files, Qdrant data, and file records only:
 
-## Environment
-
-Required in `.env`:
-
-```env
-OPENAI_API_KEY=...
-JWT_SECRET_KEY=change-this-secret-key-in-production
+```powershell
+docker compose down
+Remove-Item -Recurse -Force backend\data\uploads\*
+Remove-Item -Recurse -Force backend\data\qdrant\*
+docker compose up -d postgres
+docker compose exec postgres psql -U knowledgehub -d knowledgehub -c "TRUNCATE TABLE files RESTART IDENTITY;"
+docker compose up --build
 ```
 
-Optional:
+## Migration
 
-```env
-COHERE_API_KEY=...
-OPENAI_BASE_URL=https://api.openai.com/v1
-OPENAI_MODEL=gpt-5-mini-2025-08-07
-EMBEDDING_MODEL=text-embedding-3-large
-QDRANT_URL=http://qdrant:6333
+### SQLite to PostgreSQL
+
+If you have legacy SQLite data in `backend/data/app.db`, use:
+
+```bash
+docker exec -it rag_backend python -m app.migrate_sqlite_to_postgres
 ```
+
+This migrates:
+
+- users
+- files
+- conversations
+- conversation messages
+
+### Add `is_admin` to Existing PostgreSQL DB
+
+If needed:
+
+```bash
+docker exec -it rag_backend python -m app.migrate_add_admin
+```
+
+Note: current startup already runs `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` for `is_admin` and `content_hash`, so this helper is mainly for older/manual environments.
 
 ## Notes
 
-- Frontend requests are sent to backend through `/api`
-- Existing stale vectors from older versions can be cleaned from the `My Files` page
-- Duplicate prevention is based on file content hash, not filename
+- Frontend requests use `/api` as the backend base path.
+- The frontend image-model dropdown is populated from `GET /image-models`.
+- The backend is the source of truth for allowed ad-hoc image models.
+- Duplicate prevention is by content hash, not filename.
+- `Sync Library` removes stale Qdrant entries whose `doc_id` no longer exists in PostgreSQL.

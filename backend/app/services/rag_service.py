@@ -584,7 +584,7 @@ class RagService:
         logger.info('Retrieval elapsed_ms=%s', int((perf_counter() - retrieval_start) * 1000))
         if not candidates:
             logger.info('Ask pipeline completed: no candidates elapsed_ms=%s', int((perf_counter() - ask_start) * 1000))
-            return 'No indexed documents found. Upload files first.', []
+            return 'No library content is available yet. Ask an admin to upload files first.', []
 
         if self.reranker is not None:
             logger.info('Rerank started candidate_docs=%s', len(candidates))
@@ -661,7 +661,7 @@ class RagService:
             candidates = self._dedupe_docs(file_docs + candidates)
             if not candidates:
                 logger.info('Ask-with-file completed: no candidates elapsed_ms=%s', int((perf_counter() - ask_start) * 1000))
-                return 'No useful context found for this uploaded file and index.', []
+                return 'No useful content was found in the uploaded file or shared library.', []
 
             if self.reranker is not None:
                 rerank_start = perf_counter()
@@ -796,7 +796,7 @@ class RagService:
         )
         return {
             'success': True,
-            'message': f'Removed {len(set(text_to_remove + image_to_remove))} orphaned document vector sets.',
+            'message': f'Removed {len(set(text_to_remove + image_to_remove))} stale library entries.',
             'text_doc_ids_removed': text_to_remove,
             'image_doc_ids_removed': image_to_remove,
         }

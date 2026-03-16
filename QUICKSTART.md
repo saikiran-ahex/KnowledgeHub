@@ -87,7 +87,7 @@ You'll be automatically logged in after registration.
 - Check backend logs for errors
 
 ### No Results in Chat?
-- Make sure you've uploaded and indexed files first
+- Make sure files have been uploaded and indexed first
 - Check that files were successfully indexed (chunks > 0)
 - Try rephrasing your question
 

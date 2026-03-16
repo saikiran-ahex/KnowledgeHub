@@ -24,7 +24,7 @@ from app import database, auth
 setup_logging()
 logger = logging.getLogger(__name__)
 settings = get_settings()
-ALLOWED_ADHOC_IMAGE_MODELS = set(settings.adhoc_image_models)
+ALLOWED_ADHOC_IMAGE_MODELS = {str(item['value']) for item in settings.adhoc_image_model_options}
 
 app = FastAPI(title=settings.app_name)
 
@@ -50,6 +50,12 @@ def warmup_on_startup() -> None:
     start = perf_counter()
     logger.info('Startup warmup started')
     database.init_db()
+    if settings.admin_password:
+        admin_hash = auth.hash_password(settings.admin_password)
+        admin_user_id = database.upsert_admin_user(settings.admin_username, admin_hash)
+        logger.info('Admin user ensured user_id=%s username=%s', admin_user_id, settings.admin_username)
+    else:
+        logger.warning('ADMIN_PASSWORD is not set; admin bootstrap skipped')
     get_rag_service()
     elapsed_ms = int((perf_counter() - start) * 1000)
     logger.info('Startup warmup completed elapsed_ms=%s', elapsed_ms)
@@ -93,8 +99,8 @@ def register(req: RegisterRequest) -> AuthResponse:
     if existing:
         raise HTTPException(status_code=400, detail='Username already exists')
     password_hash = auth.hash_password(req.password)
-    is_admin = req.username == 'admin'
-    user_id = database.create_user(req.username, password_hash, is_admin)
+    user_id = database.create_user(req.username, password_hash, False)
+    is_admin = False
     token = auth.create_access_token({'user_id': user_id, 'username': req.username, 'is_admin': is_admin})
     logger.info('User registered user_id=%s username=%s is_admin=%s', user_id, req.username, is_admin)
     return AuthResponse(access_token=token, user_id=user_id, username=req.username, is_admin=is_admin)
@@ -198,13 +204,12 @@ def ask(req: AskRequest, current_user: dict = Depends(get_current_user)) -> AskR
     start = perf_counter()
     logger.info('Ask requested question_len=%s top_k=%s history_turns=%s user_id=%s', len(req.question), req.top_k, len(req.history), current_user['user_id'])
     filters = req.filters.model_dump(exclude_none=True) if req.filters else {}
-    # Search both admin files and user's own files
     answer, sources = get_rag_service().ask(
         req.question,
         top_k=req.top_k,
         history=req.history,
         filters=filters,
-        owner_ids=['admin', str(current_user['user_id'])],
+        owner_ids=['admin'],
     )
     elapsed_ms = int((perf_counter() - start) * 1000)
     logger.info('Ask completed sources=%s elapsed_ms=%s', len(sources), elapsed_ms)
@@ -329,7 +334,7 @@ async def chat(
         history=history,
         file_path=file_path,
         filters=filters,
-        owner_ids=['admin', str(current_user['user_id'])],
+        owner_ids=['admin'],
     )
 
     user_message_content = f'{question} (file: {file.filename})' if file is not None and file.filename else question
@@ -366,13 +371,13 @@ def delete_conversation(conversation_id: str, current_user: dict = Depends(get_c
 
 @app.get('/files', response_model=list[FileRecord])
 def get_files(current_user: dict = Depends(get_admin_user)) -> list[FileRecord]:
-    files = database.get_user_files(current_user['user_id'])
+    files = database.get_all_admin_files()
     return [FileRecord(**f) for f in files]
 
 
 @app.post('/files/cleanup-vectors', response_model=CleanupVectorsResponse)
 def cleanup_file_vectors(current_user: dict = Depends(get_admin_user)) -> CleanupVectorsResponse:
-    files = database.get_user_files(current_user['user_id'])
+    files = database.get_all_admin_files()
     valid_doc_ids = {str(file['doc_id']) for file in files}
     result = get_rag_service().cleanup_user_vectors('admin', valid_doc_ids)
     return CleanupVectorsResponse(**result)
@@ -380,7 +385,7 @@ def cleanup_file_vectors(current_user: dict = Depends(get_admin_user)) -> Cleanu
 
 @app.delete('/files/{file_id}', response_model=DeleteFileResponse)
 def delete_file(file_id: int, current_user: dict = Depends(get_admin_user)) -> DeleteFileResponse:
-    file_record = database.delete_file_record(file_id, current_user['user_id'])
+    file_record = database.delete_admin_file_record(file_id)
     if not file_record:
         raise HTTPException(status_code=404, detail='File not found')
     
@@ -397,4 +402,4 @@ def delete_file(file_id: int, current_user: dict = Depends(get_admin_user)) -> D
         logger.warning('Failed to delete physical file path=%s error=%s', file_record['file_path'], exc)
     
     logger.info('File deleted file_id=%s doc_id=%s user_id=%s', file_id, file_record['doc_id'], current_user['user_id'])
-    return DeleteFileResponse(success=True, message='File and vectors deleted successfully')
+    return DeleteFileResponse(success=True, message='File removed from the shared library successfully')

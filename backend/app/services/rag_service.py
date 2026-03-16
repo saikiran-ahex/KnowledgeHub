@@ -176,10 +176,12 @@ class RagService:
         return cls._TRAILING_SOURCES_RE.sub('', text).strip()
 
     @staticmethod
-    def _build_qdrant_filter(filters: dict | None, *, metadata_prefix: str = '') -> qmodels.Filter | None:
-        if not filters:
+    def _build_qdrant_filter(filters: dict | None, *, metadata_prefix: str = '', owner_ids: list[str] | None = None) -> qmodels.Filter | None:
+        if not filters and not owner_ids:
             return None
+        filters = filters or {}
         must: list[qmodels.FieldCondition] = []
+        should: list[qmodels.FieldCondition] = []
         owner_id = filters.get('owner_id')
         tenant_id = filters.get('tenant_id')
         file_type = filters.get('file_type')
@@ -188,7 +190,10 @@ class RagService:
         def field(name: str) -> str:
             return f'{metadata_prefix}{name}' if metadata_prefix else name
 
-        if owner_id:
+        if owner_ids:
+            for oid in owner_ids:
+                should.append(qmodels.FieldCondition(key=field('owner_id'), match=qmodels.MatchValue(value=str(oid))))
+        elif owner_id:
             must.append(qmodels.FieldCondition(key=field('owner_id'), match=qmodels.MatchValue(value=str(owner_id))))
         if tenant_id:
             must.append(qmodels.FieldCondition(key=field('tenant_id'), match=qmodels.MatchValue(value=str(tenant_id))))
@@ -198,9 +203,9 @@ class RagService:
             for tag in tags:
                 must.append(qmodels.FieldCondition(key=field('tags'), match=qmodels.MatchValue(value=str(tag))))
 
-        if not must:
+        if not must and not should:
             return None
-        return qmodels.Filter(must=must)
+        return qmodels.Filter(must=must, should=should if should else None)
 
     @staticmethod
     def _payload_metadata(payload: dict | None) -> dict:
@@ -310,9 +315,9 @@ class RagService:
         logger.info('Ingest completed source=%s chunks=%s elapsed_ms=%s', source_name, len(docs), int((perf_counter() - ingest_start) * 1000))
         return len(docs)
 
-    def _retrieve_image_candidates(self, queries: list[str], k: int, filters: dict | None = None) -> list[Document]:
+    def _retrieve_image_candidates(self, queries: list[str], k: int, filters: dict | None = None, owner_ids: list[str] | None = None) -> list[Document]:
         docs: list[Document] = []
-        qdrant_filter = self._build_qdrant_filter(filters)
+        qdrant_filter = self._build_qdrant_filter(filters, owner_ids=owner_ids)
         vectors = self.clip_service.embed_texts(queries)
 
         def _search(query: str, query_vector: list[float]) -> list[Document]:
@@ -394,8 +399,8 @@ class RagService:
         except Exception as exc:
             logger.warning('Failed to remove ephemeral image point_id=%s error=%s', point_id, exc)
 
-    def _retrieve_candidates(self, queries: list[str], retrieve_k: int, filters: dict | None = None) -> list[Document]:
-        qdrant_filter = self._build_qdrant_filter(filters, metadata_prefix='metadata.')
+    def _retrieve_candidates(self, queries: list[str], retrieve_k: int, filters: dict | None = None, owner_ids: list[str] | None = None) -> list[Document]:
+        qdrant_filter = self._build_qdrant_filter(filters, metadata_prefix='metadata.', owner_ids=owner_ids)
         text_candidates: list[Document] = []
 
         embedding_start = perf_counter()
@@ -448,7 +453,7 @@ class RagService:
             for f in as_completed(futures):
                 text_candidates.extend(f.result())
 
-        image_candidates = self._retrieve_image_candidates(queries, self.settings.image_retrieval_top_k, filters=filters)
+        image_candidates = self._retrieve_image_candidates(queries, self.settings.image_retrieval_top_k, filters=filters, owner_ids=owner_ids)
         candidates = self._dedupe_docs(text_candidates + image_candidates)
         logger.info(
             'Retrieval completed text_docs=%s image_docs=%s total=%s',
@@ -518,7 +523,7 @@ class RagService:
 
         encoded = base64.b64encode(image_path.read_bytes()).decode('utf-8')
         image_url = f'data:{mime};base64,{encoded}'
-        if image_model=='free model':
+        if image_model=='nemotron-free':
             _client=OpenAI(api_key=self.settings.openrouter_api_key, base_url=self.settings.openrouter_base_url)
             _model=self.settings.openrouter_model
             logger.info('Using OpenRouter for image analysis model=%s', _model)
@@ -563,6 +568,7 @@ class RagService:
         top_k: int | None = None,
         history: list[dict] | None = None,
         filters: dict | None = None,
+        owner_ids: list[str] | None = None,
     ) -> tuple[str, list[dict]]:
         ask_start = perf_counter()
         retrieve_k = top_k or self.settings.retrieval_top_k
@@ -574,7 +580,7 @@ class RagService:
         logger.info('Retrieval queries prepared count=%s', len(queries))
 
         retrieval_start = perf_counter()
-        candidates = self._retrieve_candidates(queries, retrieve_k, filters=filters)
+        candidates = self._retrieve_candidates(queries, retrieve_k, filters=filters, owner_ids=owner_ids)
         logger.info('Retrieval elapsed_ms=%s', int((perf_counter() - retrieval_start) * 1000))
         if not candidates:
             logger.info('Ask pipeline completed: no candidates elapsed_ms=%s', int((perf_counter() - ask_start) * 1000))
@@ -601,6 +607,7 @@ class RagService:
         top_k: int | None = None,
         history: list[dict] | None = None,
         filters: dict | None = None,
+        owner_ids: list[str] | None = None,
     ) -> tuple[str, list[dict]]:
         ask_start = perf_counter()
         logger.info('Ask-with-file started question_len=%s file=%s', len(question), file_path.name)
@@ -621,7 +628,7 @@ class RagService:
                 ephemeral_point_id = self._add_ephemeral_image_point(file_path)
 
             retrieval_start = perf_counter()
-            candidates = self._retrieve_candidates(queries, retrieve_k, filters=filters)
+            candidates = self._retrieve_candidates(queries, retrieve_k, filters=filters, owner_ids=owner_ids)
             logger.info('Ask-with-file retrieval elapsed_ms=%s', int((perf_counter() - retrieval_start) * 1000))
 
             if ext in IMAGE_EXTENSIONS:
@@ -678,6 +685,7 @@ class RagService:
         history: list[dict] | None = None,
         file_path: Path | None = None,
         filters: dict | None = None,
+        owner_ids: list[str] | None = None,
     ) -> tuple[str, list[dict]]:
         # Chat upload is ad-hoc only and never indexed into persistent collections.
         if file_path is not None:
@@ -688,8 +696,9 @@ class RagService:
                 top_k=top_k,
                 history=history,
                 filters=filters,
+                owner_ids=owner_ids,
             )
-        return self.ask(question=question, top_k=top_k, history=history, filters=filters)
+        return self.ask(question=question, top_k=top_k, history=history, filters=filters, owner_ids=owner_ids)
 
     def delete_by_doc_id(self, doc_id: str) -> int:
         """Delete all vectors associated with a doc_id from both collections."""

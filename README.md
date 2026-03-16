@@ -16,13 +16,14 @@ Multimodal RAG chatbot with user authentication, per-user document isolation, pe
 ## Features
 
 - User registration and login
-- Per-user file isolation
+- Admin role with dedicated admin panel at `/admin`
+- Admin can upload files that all users can query
+- Per-user file isolation (removed for regular users)
 - Persistent chat conversations stored in PostgreSQL
 - Text and image retrieval
 - Ad-hoc chat file upload for a single message
-- File deletion with vector cleanup
-- Orphaned vector cleanup from the UI
-- Duplicate upload prevention per user using file content hash
+- File deletion with vector cleanup (admin only)
+- Orphaned vector cleanup from the UI (admin only)
 
 ## Current Behavior
 
@@ -30,31 +31,42 @@ Multimodal RAG chatbot with user authentication, per-user document isolation, pe
 
 - Users register and log in with username and password
 - JWT tokens are stored in browser `localStorage`
-- All file and conversation operations are scoped to the authenticated user
+- Username `admin` automatically gets admin privileges on registration
+- Admin users access the admin panel at `http://localhost:8502/admin`
+- All chat conversations are scoped to the authenticated user
+
+### Admin Panel
+
+- Accessible at `/admin` route
+- Only users with admin role can access
+- Upload files that become available to all users
+- View and manage all uploaded files
+- Delete files and clean orphaned vectors
+- Files uploaded by admin have `owner_id='admin'`
 
 ### Uploads
 
 - Supported files: `.txt`, `.md`, `.pdf`, `.doc`, `.docx`, `.csv`, `.png`, `.jpg`, `.jpeg`, `.webp`
-- Uploaded files are stored in `backend/data/uploads/{user_id}/`
-- Files are indexed into Qdrant with user ownership metadata
-- The same user cannot upload the same file content twice
-- Different users can upload the same file independently
+- Admin uploads are stored in `backend/data/uploads/{admin_user_id}/`
+- Files are indexed into Qdrant with `owner_id='admin'`
+- Regular users cannot upload files (upload functionality removed from main UI)
 
 ### Chat
 
-- `/chat` searches only the current user's indexed data
+- `/chat` searches both admin-uploaded files and user's own files (if any)
 - Chat conversations are persisted in PostgreSQL and restored on login
 - New conversations are created automatically
 - Ad-hoc chat file uploads are used only for that request and are not persistently indexed
+- Users can query all files uploaded by admin
 
-### My Files
+### My Files (Admin Only)
 
-- Shows the authenticated user's tracked uploads
+- Shows the admin's uploaded files
 - Deleting a file removes:
   - the PostgreSQL file record
   - the physical uploaded file
   - associated vectors in Qdrant
-- `Clean Orphaned Vectors` removes vectors owned by the current user whose `doc_id` no longer exists in the `files` table
+- `Clean Orphaned Vectors` removes vectors owned by admin whose `doc_id` no longer exists in the `files` table
 
 ## API Endpoints
 
@@ -69,10 +81,10 @@ Multimodal RAG chatbot with user authentication, per-user document isolation, pe
 
 ### Files
 
-- `POST /upload`
-- `GET /files`
-- `POST /files/cleanup-vectors`
-- `DELETE /files/{file_id}`
+- `POST /upload` (admin only)
+- `GET /files` (admin only)
+- `POST /files/cleanup-vectors` (admin only)
+- `DELETE /files/{file_id}` (admin only)
 
 ### Conversations
 
@@ -103,7 +115,7 @@ Indexed documents store metadata such as:
 - `file_type`
 - `content_hash`
 - `tags`
-- `owner_id`
+- `owner_id` (set to 'admin' for admin uploads)
 - `tenant_id`
 - `page_no`
 
@@ -114,12 +126,13 @@ Indexed documents store metadata such as:
 - `id`
 - `username`
 - `password_hash`
+- `is_admin`
 - `created_at`
 
 ### `files`
 
 - `id`
-- `user_id`
+- `user_id` (references admin user for admin uploads)
 - `doc_id`
 - `filename`
 - `file_path`
@@ -160,6 +173,7 @@ docker compose up --build
 Open:
 
 - Frontend: `http://localhost:8502`
+- Admin Panel: `http://localhost:8502/admin`
 - Backend docs: `http://localhost:8001/docs`
 
 Migration note:
@@ -167,6 +181,7 @@ Migration note:
 - Existing SQLite data in `backend/data/app.db` is not migrated automatically into PostgreSQL
 - If you need old users, chats, or file records, migrate them before switching environments
 - A helper script is available: `python -m app.migrate_sqlite_to_postgres`
+- If upgrading from a previous version, run: `python -m app.migrate_add_admin` to add admin support
 
 ## Persistence
 
@@ -193,6 +208,8 @@ docker compose up --build
 - Backend initializes PostgreSQL tables and Qdrant collections on startup
 - The first startup after a reset can take longer because collections are recreated
 - Wait for backend startup to complete before sending the first chat request
+- To create an admin user, register with username `admin` - this automatically grants admin privileges
+- Admin users can then access the admin panel at `/admin`
 
 ## Environment
 

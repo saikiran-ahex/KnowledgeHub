@@ -22,6 +22,7 @@ def init_db():
                     id BIGSERIAL PRIMARY KEY,
                     username TEXT UNIQUE NOT NULL,
                     password_hash TEXT NOT NULL,
+                    is_admin BOOLEAN DEFAULT FALSE,
                     created_at TEXT NOT NULL
                 )'''
             )
@@ -79,12 +80,12 @@ def get_db():
         conn.close()
 
 
-def create_user(username: str, password_hash: str) -> int:
+def create_user(username: str, password_hash: str, is_admin: bool = False) -> int:
     with get_db() as conn:
         with conn.cursor() as c:
             c.execute(
-                'INSERT INTO users (username, password_hash, created_at) VALUES (%s, %s, %s) RETURNING id',
-                (username, password_hash, datetime.now(timezone.utc).isoformat()),
+                'INSERT INTO users (username, password_hash, is_admin, created_at) VALUES (%s, %s, %s, %s) RETURNING id',
+                (username, password_hash, is_admin, datetime.now(timezone.utc).isoformat()),
             )
             user_id = c.fetchone()['id']
         conn.commit()
@@ -135,6 +136,18 @@ def get_user_files(user_id: int):
     with get_db() as conn:
         with conn.cursor() as c:
             c.execute('SELECT * FROM files WHERE user_id = %s ORDER BY uploaded_at DESC', (user_id,))
+            return [dict(row) for row in c.fetchall()]
+
+
+def get_all_admin_files():
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute(
+                '''SELECT f.* FROM files f
+                   JOIN users u ON f.user_id = u.id
+                   WHERE u.is_admin = TRUE
+                   ORDER BY f.uploaded_at DESC'''
+            )
             return [dict(row) for row in c.fetchall()]
 
 

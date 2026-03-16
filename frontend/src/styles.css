@@ -272,7 +272,8 @@ body { background: #000; color: #fff; height: 100vh; overflow: hidden; }
   line-height: 1.7;
   white-space: pre-wrap;
   word-wrap: break-word;
-  max-width: 75%;
+  width: fit-content;
+  max-width: 260px;
   box-shadow: var(--shadow-sm);
 }
 .msg.user .bubble { background: linear-gradient(135deg, #fff 0%, #f5f5f5 100%); color: #000; margin-left: auto; }
@@ -414,16 +415,25 @@ textarea::placeholder { color: #666; }
   min-width: 100px;
 }
 .imageModelSelect:hover { background: #333; }
-.imageModelSelect option { background: #2a2a2a; color: #fff; } 100%);
-  color: #000;
-  border: none;
-  border-radius: 10px;
-  padding: 10px 18px;
+.imageModelSelect {
+  background: #2a2a2a;
+  border: 1px solid #3a3a3a;
+  color: #fff;
+  padding: 8px 8px;
+  border-radius: 8px;
+  font-size: 12px;
   cursor: pointer;
-  font-size: 20px;
   transition: all 0.2s;
-  box-shadow: var(--shadow-sm);
-  font-weight: 600;
+  min-width: 100px;
+}
+
+.imageModelSelect:hover {
+  background: #333;
+}
+
+.imageModelSelect option {
+  background: #2a2a2a;
+  color: #fff;
 }
 .sendBtn:hover:not(:disabled) { transform: scale(1.05); box-shadow: var(--shadow-md); }
 .sendBtn:disabled { opacity: 0.3; cursor: not-allowed; }
@@ -816,4 +826,210 @@ textarea::placeholder { color: #666; }
   background: #ff6b6b;
   color: #000;
   border-color: #ff6b6b;
+}
+
+.adminPage {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: #000;
+}
+
+.adminHeader {
+  padding: 24px 32px;
+  background: linear-gradient(180deg, #0a0a0a 0%, #000 100%);
+  border-bottom: 1px solid #1a1a1a;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.adminHeader h1 {
+  font-size: 28px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #fff 0%, #999 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.adminHeaderActions {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.adminHeaderActions span {
+  color: #ccc;
+  font-size: 14px;
+}
+
+.adminMain {
+  flex: 1;
+  padding: 40px 32px;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.adminSection {
+  background: linear-gradient(135deg, #1a1a1a 0%, #111 100%);
+  border: 1px solid #2a2a2a;
+  border-radius: 16px;
+  padding: 32px;
+  margin-bottom: 32px;
+  box-shadow: var(--shadow-lg);
+}
+
+.adminSection h2 {
+  font-size: 22px;
+  margin-bottom: 8px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.adminSection p {
+  color: #888;
+  margin-bottom: 24px;
+  font-size: 14px;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.sectionHeader h2 {
+  margin-bottom: 0;
+}
+
+.uploadBtn {
+  display: inline-block;
+  padding: 14px 28px;
+  background: linear-gradient(135deg, #fff 0%, #e0e0e0 100%);
+  color: #000;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: var(--shadow-md);
+}
+
+.uploadBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.cleanupBtn {
+  background: #2a1a1a;
+  border: 1px solid #4a2a2a;
+  color: #ff6b6b;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.cleanupBtn:hover {
+  background: #ff6b6b;
+  color: #000;
+  border-color: #ff6b6b;
+}
+
+.emptyText {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+  font-size: 15px;
+}
+
+.fileList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.fileItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: #0a0a0a;
+  border: 1px solid #2a2a2a;
+  border-radius: 12px;
+  transition: all 0.2s;
+}
+
+.fileItem:hover {
+  background: #111;
+  border-color: #3a3a3a;
+  transform: translateX(4px);
+}
+
+.fileInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fileName {
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.fileDetails {
+  font-size: 13px;
+  color: #666;
+}
+
+.deleteFileBtn {
+  background: #2a1a1a;
+  border: 1px solid #4a2a2a;
+  color: #ff6b6b;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.deleteFileBtn:hover {
+  background: #ff6b6b;
+  color: #000;
+  border-color: #ff6b6b;
+}
+
+@media (max-width: 768px) {
+  .adminMain {
+    padding: 24px 16px;
+  }
+  
+  .adminSection {
+    padding: 24px 20px;
+  }
+  
+  .sectionHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  
+  .fileItem {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .deleteFileBtn {
+    width: 100%;
+  }
 }

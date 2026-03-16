@@ -48,6 +48,7 @@ class Settings(BaseSettings):
     openrouter_model: str = Field(default='nvidia/nemotron-nano-12b-v2-vl:free')
 
     clip_model_name: str = Field(default='clip-ViT-B-32')
+    adhoc_image_models: tuple[str, ...] = ('gpt-5-mini', 'gpt-4.1-mini', 'nemotron-nano')
 
     cohere_api_key: str = Field(default='')
     cohere_rerank_model: str = 'rerank-v3.5'

@@ -9,7 +9,6 @@ from uuid import uuid4
 import psycopg
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
 
 from app.config import get_settings
 from app.logging_config import setup_logging
@@ -373,7 +372,11 @@ def delete_conversation(conversation_id: str, current_user: dict = Depends(get_c
 @app.get('/files', response_model=list[FileRecord])
 def get_files(current_user: dict = Depends(get_admin_user)) -> list[FileRecord]:
     files = database.get_all_admin_files()
-    return [FileRecord(**f) for f in files]
+    records = []
+    for f in files:
+        p = Path(f['file_path'])
+        records.append(FileRecord(**f, file_size=p.stat().st_size if p.exists() else None))
+    return records
 
 
 @app.post('/files/cleanup-vectors', response_model=CleanupVectorsResponse)
@@ -382,25 +385,6 @@ def cleanup_file_vectors(current_user: dict = Depends(get_admin_user)) -> Cleanu
     valid_doc_ids = {str(file['doc_id']) for file in files}
     result = get_rag_service().cleanup_user_vectors('admin', valid_doc_ids)
     return CleanupVectorsResponse(**result)
-
-
-@app.get('/files/{file_id}/download')
-def download_file(file_id: int, current_user: dict = Depends(get_admin_user)):
-    file_record = database.get_admin_file_by_id(file_id)
-    if not file_record:
-        raise HTTPException(status_code=404, detail='File not found')
-    file_path = Path(file_record['file_path'])
-    if not file_path.exists():
-        raise HTTPException(status_code=404, detail='File not found on disk')
-    return FileResponse(
-        path=file_path,
-        filename=file_record['filename'],
-        media_type='application/octet-stream',
-        headers={
-            'X-File-Path': str(file_path),
-            'X-File-Size': str(file_path.stat().st_size),
-        },
-    )
 
 
 @app.delete('/files/{file_id}', response_model=DeleteFileResponse)

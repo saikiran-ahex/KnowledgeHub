@@ -82,6 +82,8 @@ class FileRecord(BaseModel):
     file_type: str
     chunks_indexed: int
     uploaded_at: str
+    file_path: str | None = None
+    file_size: int | None = None
 
 
 class DeleteFileResponse(BaseModel):

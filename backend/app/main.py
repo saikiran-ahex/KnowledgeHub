@@ -372,7 +372,11 @@ def delete_conversation(conversation_id: str, current_user: dict = Depends(get_c
 @app.get('/files', response_model=list[FileRecord])
 def get_files(current_user: dict = Depends(get_admin_user)) -> list[FileRecord]:
     files = database.get_all_admin_files()
-    return [FileRecord(**f) for f in files]
+    records = []
+    for f in files:
+        p = Path(f['file_path'])
+        records.append(FileRecord(**f, file_size=p.stat().st_size if p.exists() else None))
+    return records
 
 
 @app.post('/files/cleanup-vectors', response_model=CleanupVectorsResponse)

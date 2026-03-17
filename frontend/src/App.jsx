@@ -2,6 +2,7 @@ import { useMemo, useState, useRef, useEffect } from 'react';
 import { IoMicSharp } from "react-icons/io5";
 import { TiAttachment } from "react-icons/ti";
 import Admin from './Admin';
+import { useTheme } from './context/ThemeContext';
 
 const API_BASE = '/api';
 const SUPPORTED = '.txt,.md,.pdf,.doc,.docx,.csv,.png,.jpg,.jpeg,.webp';
@@ -45,7 +46,7 @@ function ChatMessage({ role, content, sources, filePreviewUrl, fileName }) {
   return (
     <div className={`msg ${role}`}>
       {role === 'assistant' && <div className="botName">Zill</div>}
-      <div className={`messageStack ${role}`} style={{ display: 'flex', flexDirection: 'column', alignItems: role === 'assistant' ? 'flex-start' : 'flex-end', gap: '6px' }}>
+      <div className={`messageStack ${role}`} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
         {filePreviewUrl && (
           <img
             className="chatImagePreview"
@@ -59,7 +60,7 @@ function ChatMessage({ role, content, sources, filePreviewUrl, fileName }) {
             className="bubble"
             style={{ margin: 0 }}
           >
-            <p style={{ margin: 0, wordBreak: "break-word" }}>{content}</p>
+            <p style={{ margin: 0 }}>{content}</p>
           </div>
         )}
         {role === 'assistant' ? <Sources sources={sources} /> : null}
@@ -77,12 +78,12 @@ export default function App() {
       setIsAdminRoute(window.location.pathname === '/admin');
       setIsAdmin(localStorage.getItem('is_admin') === 'true');
     };
-    
+
     window.addEventListener('popstate', handleLocationChange);
-    
+
     // Listen for custom navigation events
     window.addEventListener('navigate', handleLocationChange);
-    
+
     return () => {
       window.removeEventListener('popstate', handleLocationChange);
       window.removeEventListener('navigate', handleLocationChange);
@@ -127,6 +128,7 @@ function ChatApp() {
   const liveTranscriptRef = useRef('');
   const pendingSendAfterListeningRef = useRef(false);
   const pendingSendTextRef = useRef('');
+  const { theme, toggleTheme } = useTheme();
 
   const currentChat = chats.find((c) => c.id === activeChat) || chats[0];
   const history = currentChat.messages;
@@ -200,7 +202,7 @@ function ChatApp() {
       alert('Speech recognition is not supported in your browser');
       return;
     }
-    if(question.trim().length !== 0) {
+    if (question.trim().length !== 0) {
       sendMessage();
     }
     if (isListening) {
@@ -260,7 +262,7 @@ function ChatApp() {
       });
       const data = await readApiResponse(res);
       if (!res.ok) throw new Error(data.detail || 'Authentication failed');
-      
+
       localStorage.setItem('token', data.access_token);
       localStorage.setItem('username', data.username);
       localStorage.setItem('is_admin', data.is_admin ? 'true' : 'false');
@@ -371,7 +373,7 @@ function ChatApp() {
     const capturedFile = file;
     setFile(null);
 
-    
+
     const historyForApi = history.map((m) => ({ role: m.role, content: m.content }));
     let targetConversationId = currentChat.id;
 
@@ -379,10 +381,10 @@ function ChatApp() {
       prev.map((c) =>
         c.id === activeChat
           ? {
-              ...c,
-              messages: [...c.messages, userMsg],
-              title: c.messages.length === 0 ? q.slice(0, 30) : c.title,
-            }
+            ...c,
+            messages: [...c.messages, userMsg],
+            title: c.messages.length === 0 ? q.slice(0, 30) : c.title,
+          }
           : c
       )
     );
@@ -425,12 +427,12 @@ function ChatApp() {
         prev.map((c) =>
           c.id === targetConversationId
             ? {
-                ...c,
-                id: data.conversation_id || c.id,
-                isDraft: false,
-                title: c.title === 'New Chat' ? q.slice(0, 30) : c.title,
-                messages: [...c.messages, { role: 'assistant', content: data.answer, sources: data.sources || [] }],
-              }
+              ...c,
+              id: data.conversation_id || c.id,
+              isDraft: false,
+              title: c.title === 'New Chat' ? q.slice(0, 30) : c.title,
+              messages: [...c.messages, { role: 'assistant', content: data.answer, sources: data.sources || [] }],
+            }
             : c
         )
       );
@@ -453,9 +455,9 @@ function ChatApp() {
         <div className="loginCard">
           <h1>✨ KnowledgeHub</h1>
           <p>{isRegister ? 'Create your account' : 'Sign in to continue'}</p>
-          
+
           {authError && <div className="authError">{authError}</div>}
-          
+
           <input
             type="text"
             placeholder="Username"
@@ -470,21 +472,21 @@ function ChatApp() {
             onChange={(e) => setLoginPassword(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleAuth()}
           />
-          
+
           <button onClick={handleAuth} className="authBtn">
             {isRegister ? 'Register' : 'Login'}
           </button>
-          
+
           <button onClick={() => setIsRegister(!isRegister)} className="toggleAuthBtn">
             {isRegister ? 'Already have an account? Login' : "Don't have an account? Register"}
           </button>
-          
+
           <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid #2a2a2a' }}>
-            <button 
+            <button
               onClick={() => {
                 window.history.pushState({}, '', '/admin');
                 window.dispatchEvent(new Event('navigate'));
-              }} 
+              }}
               className="toggleAuthBtn"
               style={{ marginTop: '0' }}
             >
@@ -527,7 +529,23 @@ function ChatApp() {
 
         <div className="sidebarFooter">
           <div className="userInfo">
+            <button
+              onClick={toggleTheme}
+              className="themeToggleMinimal"
+              title="Toggle theme"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="18"
+                height="18"
+                fill="currentColor"
+                viewBox="0 0 32 32"
+              >
+                <path d="M16 .5C7.4.5.5 7.4.5 16S7.4 31.5 16 31.5 31.5 24.6 31.5 16 24.6.5 16 .5zm0 28.1V3.4C23 3.4 28.6 9 28.6 16S23 28.6 16 28.6z" />
+              </svg>
+            </button>
             <span>👤 {username}</span>
+
             <button onClick={logout} className="logoutBtn">Logout</button>
           </div>
         </div>
@@ -579,8 +597,8 @@ function ChatApp() {
               <TiAttachment />
               <input type="file" accept={SUPPORTED} onChange={(e) => { setFile(e.target.files?.[0] || null); e.target.value = ''; }} style={{ display: 'none' }} />
             </label>
-            <button 
-              onClick={toggleListening} 
+            <button
+              onClick={toggleListening}
               className={`micBtn ${isListening ? 'listening' : ''}`}
               title="Voice input"
             >
@@ -605,7 +623,7 @@ function ChatApp() {
               onChange={(e) => setQuestion(e.target.value)}
               onKeyDown={handleKeyDown}
             />
-            <button onClick={sendMessage} disabled={!canSend} className="sendBtn">{busy ? '⏳' : '➤'}</button>
+            <button onClick={() => sendMessage()} disabled={!canSend} className="sendBtn">{busy ? '⏳' : '➤'}</button>
           </div>
         </div>
       </main>

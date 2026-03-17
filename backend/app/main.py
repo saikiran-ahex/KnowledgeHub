@@ -392,7 +392,15 @@ def download_file(file_id: int, current_user: dict = Depends(get_admin_user)):
     file_path = Path(file_record['file_path'])
     if not file_path.exists():
         raise HTTPException(status_code=404, detail='File not found on disk')
-    return FileResponse(path=file_path, filename=file_record['filename'], media_type='application/octet-stream')
+    return FileResponse(
+        path=file_path,
+        filename=file_record['filename'],
+        media_type='application/octet-stream',
+        headers={
+            'X-File-Path': str(file_path),
+            'X-File-Size': str(file_path.stat().st_size),
+        },
+    )
 
 
 @app.delete('/files/{file_id}', response_model=DeleteFileResponse)

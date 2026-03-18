@@ -1,8 +1,15 @@
 :root {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-  --shadow-sm: 0 1px 3px rgba(255, 255, 255, 0.05);
-  --shadow-md: 0 4px 12px rgba(255, 255, 255, 0.08);
-  --shadow-lg: 0 8px 24px rgba(255, 255, 255, 0.12);
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    "Segoe UI Emoji",
+    "Segoe UI Symbol",
+    "Noto Color Emoji",
+    "Apple Color Emoji",
+    "Twemoji Mozilla",
+    "Roboto",
+    sans-serif;
 }
 
 /* Dark theme (default) */
@@ -1930,4 +1937,66 @@ textarea::placeholder {
 
 .activePage {
   background: #4f46e5;
+}
+
+.plusWrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Tooltip */
+.tooltip {
+  position: absolute;
+  bottom: -40px;
+  left: 50%;
+  transform: translateX(-50%) translateY(5px);
+
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-secondary);
+
+  padding: 6px 10px;
+  font-size: 12px;
+  border-radius: 6px;
+  white-space: nowrap;
+
+  opacity: 0;
+  pointer-events: none;
+
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Arrow */
+.tooltip::before {
+  content: "";
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+
+  border-width: 5px;
+  border-style: solid;
+  border-color: transparent transparent var(--bg-secondary) transparent;
+}
+
+/* Show on hover */
+.plusWrapper:hover .tooltip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.emoji {
+  font-family: "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  -webkit-text-fill-color: initial;
+}
+
+.gradientText {
+  background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-tertiary) 100%);
+
+  background-clip: text;
+  -webkit-background-clip: text;
+
+  -webkit-text-fill-color: transparent;
 }

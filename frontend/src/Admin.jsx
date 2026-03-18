@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTheme } from './context/ThemeContext';
 
 const API_BASE = '/api';
 const SUPPORTED = '.txt,.md,.pdf,.doc,.docx,.csv,.png,.jpg,.jpeg,.webp';
@@ -11,10 +12,12 @@ async function readApiResponse(res) {
 }
 
 export default function Admin() {
+  const { theme, toggleTheme } = useTheme();
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [username, setUsername] = useState(localStorage.getItem('username') || '');
   const [isAdmin, setIsAdmin] = useState(localStorage.getItem('is_admin') === 'true');
   const [files, setFiles] = useState([]);
+  const [uploadOpen, setUploadOpen] = useState(false)
   const [uploading, setUploading] = useState(false);
   const [uploadResults, setUploadResults] = useState([]);
   const [loginUsername, setLoginUsername] = useState('');
@@ -28,6 +31,17 @@ export default function Admin() {
   useEffect(() => {
     if (token && isAdmin) loadFiles();
   }, [token, isAdmin]);
+
+  const FILES_PER_PAGE = 3;
+
+  const [page, setPage] = useState(1);
+
+  const startIndex = (page - 1) * FILES_PER_PAGE;
+  const endIndex = startIndex + FILES_PER_PAGE;
+
+  const currentFiles = files.slice(startIndex, endIndex);
+
+  const totalPages = Math.ceil(files.length / FILES_PER_PAGE);
 
   function showNotification(message, type = 'success') {
     setNotification({ message, type });
@@ -53,7 +67,7 @@ export default function Admin() {
       });
       const data = await readApiResponse(res);
       if (!res.ok) throw new Error(data.detail || 'Login failed');
-      
+
       if (!data.is_admin) {
         setAuthError('Admin access required');
         return;
@@ -66,7 +80,7 @@ export default function Admin() {
       setUsername(data.username);
       setLoginUsername('');
       setLoginPassword('');
-      
+
       // Redirect to admin panel after successful login
       window.location.href = '/admin';
     } catch (err) {
@@ -119,6 +133,7 @@ export default function Admin() {
       setUploadResults([{ filename: 'error', error: String(err.message || err), chunks_indexed: 0 }]);
     } finally {
       setUploading(false);
+      setUploadOpen(false);
       e.target.value = '';
     }
   }
@@ -131,7 +146,7 @@ export default function Admin() {
       });
       const data = await readApiResponse(res);
       if (!res.ok) throw new Error(data.detail || 'Delete failed');
-      
+
       showNotification('File deleted successfully', 'success');
       await loadFiles();
     } catch (err) {
@@ -147,7 +162,7 @@ export default function Admin() {
       });
       const data = await readApiResponse(res);
       if (!res.ok) throw new Error(data.detail || 'Cleanup failed');
-      
+
       showNotification(data.message || 'Cleanup completed', 'success');
       await loadFiles();
     } catch (err) {
@@ -185,9 +200,9 @@ export default function Admin() {
         <div className="loginCard">
           <h1>🔐 Admin Panel</h1>
           <p>Sign in as Admin</p>
-          
+
           {authError && <div className="authError">{authError}</div>}
-          
+
           <input
             type="text"
             placeholder="Admin Username"
@@ -202,15 +217,15 @@ export default function Admin() {
             onChange={(e) => setLoginPassword(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
           />
-          
+
           <button onClick={handleLogin} className="authBtn">Sign in as Admin</button>
-          
+
           <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid #2a2a2a' }}>
-            <button 
+            <button
               onClick={() => {
                 window.history.pushState({}, '', '/');
                 window.dispatchEvent(new Event('navigate'));
-              }} 
+              }}
               className="toggleAuthBtn"
             >
               ← Back to User Login
@@ -231,76 +246,217 @@ export default function Admin() {
         </div>
       )}
       <header className="adminHeader">
-        <h1>🔐 Admin Panel</h1>
+
+        <h1 className="adminTitle">
+          <svg
+            className="lockIcon"
+            xmlns="http://www.w3.org/2000/svg"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0110 0v4"></path>
+          </svg>
+
+          Admin Panel
+        </h1>
+
         <div className="adminHeaderActions">
+
+          <button
+            onClick={toggleTheme}
+            className="themeToggleMinimal"
+            title="Toggle theme"
+            aria-label="Toggle theme"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              fill="currentColor"
+              viewBox="0 0 32 32"
+            >
+              <path d="M16 .5C7.4.5.5 7.4.5 16S7.4 31.5 16 31.5 31.5 24.6 31.5 16 24.6.5 16 .5zm0 28.1V3.4C23 3.4 28.6 9 28.6 16S23 28.6 16 28.6z" />
+            </svg>
+          </button>
+
           <span>👤 {username}</span>
-          <button onClick={logout} className="headerBtn">Logout</button>
+
+          <button onClick={logout} className="headerBtn">
+            Logout
+          </button>
+
         </div>
+
       </header>
 
       <main className="adminMain">
-        <section className="adminSection">
-          <h2>Upload Files</h2>
-          <p>Upload files that all users can search and chat with</p>
-          <p className="uploadInfo">Max upload size: {MAX_UPLOAD_SIZE_MB}MB per file</p>
+        {/* <section className="adminSection">
+            <h2>Upload Files</h2>
+            <p>Upload files that all users can search and chat with</p>
+            <p className="uploadInfo">Max upload size: {MAX_UPLOAD_SIZE_MB}MB per file</p>
 
-          <label className="uploadBtn">
-            {uploading ? 'Uploading...' : 'Choose & Upload Files'}
-            <input
-              type="file"
-              multiple
-              accept={SUPPORTED}
-              onChange={handleUpload}
-              disabled={uploading}
-              style={{ display: 'none' }}
-            />
-          </label>
+            <label className="uploadBtn">
+              {uploading ? 'Uploading...' : 'Choose & Upload Files'}
+              <input
+                type="file"
+                multiple
+                accept={SUPPORTED}
+                onChange={handleUpload}
+                disabled={uploading}
+                style={{ display: 'none' }}
+              />
+            </label>
 
-          {uploadResults.length > 0 && (
-            <div className="uploadResults">
-              {uploadResults.map((row, idx) => (
-                <div key={idx} className={`uploadResultItem ${row.error ? 'error' : 'success'}`}>
-                  <div className="resultIcon">
-                    {row.error ? '❌' : '✅'}
-                  </div>
-                  <div className="resultContent">
-                    <div className="resultTitle">
-                      {row.error ? 'Upload Failed' : 'Upload Complete'}
+            {uploadResults.length > 0 && (
+              <div className="uploadResults">
+                {uploadResults.map((row, idx) => (
+                  <div key={idx} className={`uploadResultItem ${row.error ? 'error' : 'success'}`}>
+                    <div className="resultIcon">
+                      {row.error ? '❌' : '✅'}
                     </div>
-                    <div className="resultDetails">
-                      {row.error
-                        ? `${row.filename || 'File'}: ${row.error}`
-                        : `${row.filename} • ${row.chunks_indexed} sections ready`
-                      }
+                    <div className="resultContent">
+                      <div className="resultTitle">
+                        {row.error ? 'Upload Failed' : 'Upload Complete'}
+                      </div>
+                      <div className="resultDetails">
+                        {row.error
+                          ? `${row.filename || 'File'}: ${row.error}`
+                          : `${row.filename} • ${row.chunks_indexed} sections ready`
+                        }
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
+                ))}
+              </div>
+            )}
+          </section> */}
 
         <section className="adminSection">
           <div className="sectionHeader">
             <h2>📁 Shared Files ({files.length})</h2>
+            <div className="fileActions">
+              <button
+                className="plusBtn"
+                onClick={() => setUploadOpen(true)}
+              >
+                +
+              </button>
+            </div>
+            {uploadOpen && (
+              <div className="uploadModal">
+
+                <div className="uploadModalCard">
+                  <h2>Upload Files</h2>
+                  <p>Upload files that all users can search and chat with</p>
+
+                  <label className="uploadBtn">
+                    Choose Files
+                    <input
+                      type="file"
+                      multiple
+                      accept={SUPPORTED}
+                      onChange={handleUpload}
+                      style={{ display: "none" }}
+                    />
+                  </label>
+
+                  <button
+                    className="closeBtn"
+                    onClick={() => setUploadOpen(false)}
+                  >
+                    ✕
+                  </button>
+
+                </div>
+
+              </div>
+            )}
             <button onClick={handleCleanup} className="cleanupBtn">Sync Library</button>
           </div>
-          
+
           {files.length === 0 ? (
             <p className="emptyText">No shared files uploaded yet</p>
           ) : (
-            <div className="fileList">
-              {files.map((file) => (
-                <div key={file.id} className="fileItem">
-                  <div className="fileInfo">
-                    <span className="fileName">📄 {file.filename}</span>
-                    <span className="fileDetails">
-                      {file.file_type} • {new Date(file.uploaded_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <button onClick={() => handleDelete(file.id)} className="deleteFileBtn">Delete</button>
+            <div className="filesTableContainer">
+
+              <table className="filesTable">
+                <thead>
+                  <tr>
+                    <th>File Name</th>
+                    <th>Type</th>
+                    <th>Size</th>
+                    <th>Download</th>
+                    <th>Delete</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {currentFiles.map((file) => (
+                    <tr key={file.id}>
+                      <td>📄 {file.filename}</td>
+
+                      <td>{file.file_type}</td>
+
+                      <td>{file.chunks_indexed}</td>
+
+                      <td>
+                        <button
+                          className="tableBtn"
+                          onClick={() => handleDownload(file.id)}
+                        >
+                          Download
+                        </button>
+                      </td>
+
+                      <td>
+                        <button
+                          className="deleteFileBtn"
+                          onClick={() => handleDelete(file.id)}
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div className="paginationContainer">
+
+                <div className="pagination">
+                  <button
+                    disabled={page === 1}
+                    onClick={() => setPage((p) => p - 1)}
+                    className="pageBtn"
+                  >
+                    Prev
+                  </button>
+
+                  {Array.from({ length: totalPages }, (_, i) => (
+                    <button
+                      key={i}
+                      className={`pageBtn ${page === i + 1 ? "activePage" : ""}`}
+                      onClick={() => setPage(i + 1)}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
+
+                  <button
+                    disabled={page === totalPages}
+                    onClick={() => setPage((p) => p + 1)}
+                    className="pageBtn"
+                  >
+                    Next
+                  </button>
                 </div>
-              ))}
+
+              </div>
             </div>
           )}
         </section>

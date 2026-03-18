@@ -198,7 +198,10 @@ export default function Admin() {
     return (
       <div className="loginPage">
         <div className="loginCard">
-          <h1>🔐 Admin Panel</h1>
+          <h1>
+            <span className="emoji">🔐</span>
+            <span className="gradientText"> Admin Panel</span>
+          </h1>
           <p>Sign in as Admin</p>
 
           {authError && <div className="authError">{authError}</div>}
@@ -297,57 +300,47 @@ export default function Admin() {
       </header>
 
       <main className="adminMain">
-        {/* <section className="adminSection">
-            <h2>Upload Files</h2>
-            <p>Upload files that all users can search and chat with</p>
-            <p className="uploadInfo">Max upload size: {MAX_UPLOAD_SIZE_MB}MB per file</p>
+        <section className="adminSection">
+          <div className="sectionHeader">
+            <h2>Evaluation</h2>
+            <button onClick={handleRunEvaluation} className="cleanupBtn" disabled={evaluationBusy}>
+              {evaluationBusy ? 'Running...' : 'Run Evaluation'}
+            </button>
+          </div>
+          <p>Test your data file to check how well the system is working.</p>
 
-            <label className="uploadBtn">
-              {uploading ? 'Uploading...' : 'Choose & Upload Files'}
-              <input
-                type="file"
-                multiple
-                accept={SUPPORTED}
-                onChange={handleUpload}
-                disabled={uploading}
-                style={{ display: 'none' }}
-              />
-            </label>
-
-            {uploadResults.length > 0 && (
-              <div className="uploadResults">
-                {uploadResults.map((row, idx) => (
-                  <div key={idx} className={`uploadResultItem ${row.error ? 'error' : 'success'}`}>
-                    <div className="resultIcon">
-                      {row.error ? '❌' : '✅'}
-                    </div>
-                    <div className="resultContent">
-                      <div className="resultTitle">
-                        {row.error ? 'Upload Failed' : 'Upload Complete'}
-                      </div>
-                      <div className="resultDetails">
-                        {row.error
-                          ? `${row.filename || 'File'}: ${row.error}`
-                          : `${row.filename} • ${row.chunks_indexed} sections ready`
-                        }
-                      </div>
+          {evaluationResult ? (
+            <div className="evalResults">
+              {evaluationResult.truncated ? (
+                <div className="evalMeta">Only the latest {evaluationResult.max_rows} rows were evaluated.</div>
+              ) : null}
+              <div className="evalGrid">
+                {Object.entries(evaluationResult.summary || {}).map(([name, value]) => (
+                  <div key={name} className="evalCard">
+                    <div className="evalLabel">{name}</div>
+                    <div className="evalValue">
+                      {value == null ? 'n/a' : (Number(value) * 100).toFixed(2) + '%'}
                     </div>
                   </div>
                 ))}
               </div>
-            )}
-          </section> */}
-
+            </div>
+          ) : null}
+        </section>
         <section className="adminSection">
           <div className="sectionHeader">
             <h2>📁 Shared Files ({files.length})</h2>
             <div className="fileActions">
-              <button
-                className="plusBtn"
-                onClick={() => setUploadOpen(true)}
-              >
-                +
-              </button>
+              <div className="plusWrapper">
+                <button
+                  className="plusBtn"
+                  onClick={() => setUploadOpen(true)}
+                >
+                  +
+                </button>
+
+                <span className="tooltip">Upload Files</span>
+              </div>
             </div>
             {uploadOpen && (
               <div className="uploadModal">
@@ -461,42 +454,6 @@ export default function Admin() {
           )}
         </section>
 
-        <section className="adminSection">
-          <div className="sectionHeader">
-            <h2>Evaluation</h2>
-            <button onClick={handleRunEvaluation} className="cleanupBtn" disabled={evaluationBusy}>
-              {evaluationBusy ? 'Running...' : 'Run Evaluation'}
-            </button>
-          </div>
-          <p>Run RAGAS against a JSONL dataset stored under <code>backend/data</code>.</p>
-          <input
-            type="text"
-            value={evaluationDatasetPath}
-            onChange={(e) => setEvaluationDatasetPath(e.target.value)}
-            placeholder="eval/sample_ragas_eval.jsonl"
-            className="evalInput"
-          />
-
-          {evaluationResult ? (
-            <div className="evalResults">
-              <div className="evalMeta">Dataset: {evaluationResult.dataset_path}</div>
-              <div className="evalMeta">Evaluated rows: {evaluationResult.samples}</div>
-              <div className="evalMeta">Dataset rows: {evaluationResult.total_rows}</div>
-              <div className="evalMeta">Max rows per run: {evaluationResult.max_rows}</div>
-              {evaluationResult.truncated ? (
-                <div className="evalMeta">Only the latest {evaluationResult.max_rows} rows were evaluated.</div>
-              ) : null}
-              <div className="evalGrid">
-                {Object.entries(evaluationResult.summary || {}).map(([name, value]) => (
-                  <div key={name} className="evalCard">
-                    <div className="evalLabel">{name}</div>
-                    <div className="evalValue">{value == null ? 'n/a' : Number(value).toFixed(3)}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : null}
-        </section>
       </main>
     </div>
   );

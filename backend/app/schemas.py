@@ -98,6 +98,23 @@ class CleanupVectorsResponse(BaseModel):
     image_doc_ids_removed: list[str] = []
 
 
+class RunEvaluationRequest(BaseModel):
+    dataset_path: str | None = None
+    top_k: int | None = None
+
+
+class RunEvaluationResponse(BaseModel):
+    success: bool
+    dataset_path: str
+    output_path: str | None = None
+    samples: int
+    total_rows: int
+    max_rows: int
+    truncated: bool = False
+    summary: dict[str, float | None]
+    results: list[dict] = []
+
+
 class ConversationRecord(BaseModel):
     id: str
     title: str

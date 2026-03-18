@@ -16,7 +16,7 @@ from app.schemas import (
     AskRequest, AskResponse, AskWithFileResponse, ChatResponse, HealthResponse, UploadResponse,
     RegisterRequest, LoginRequest, AuthResponse, FileRecord, DeleteFileResponse,
     ConversationRecord, CreateConversationResponse, DeleteConversationResponse, CleanupVectorsResponse,
-    ImageModelOption,
+    ImageModelOption, RunEvaluationRequest, RunEvaluationResponse,
 )
 from app.services.document_loader import SUPPORTED_EXTENSIONS
 from app import database, auth
@@ -385,6 +385,34 @@ def cleanup_file_vectors(current_user: dict = Depends(get_admin_user)) -> Cleanu
     valid_doc_ids = {str(file['doc_id']) for file in files}
     result = get_rag_service().cleanup_user_vectors('admin', valid_doc_ids)
     return CleanupVectorsResponse(**result)
+
+
+@app.post('/evaluation/run', response_model=RunEvaluationResponse)
+def run_evaluation(req: RunEvaluationRequest, current_user: dict = Depends(get_admin_user)) -> RunEvaluationResponse:
+    base_data_dir = settings.upload_dir.parent.resolve()
+    dataset_path = (base_data_dir / 'eval' / 'sample_ragas_eval.jsonl') if not req.dataset_path else Path(req.dataset_path)
+    if not dataset_path.is_absolute():
+        dataset_path = (base_data_dir / dataset_path).resolve()
+    else:
+        dataset_path = dataset_path.resolve()
+
+    try:
+        dataset_path.relative_to(base_data_dir)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail='dataset_path must be inside backend/data') from exc
+
+    if not dataset_path.exists():
+        raise HTTPException(status_code=404, detail=f'Dataset not found: {dataset_path}')
+
+    output_path = (base_data_dir / 'eval' / 'latest_ragas_report.json').resolve()
+    try:
+        from app.evaluate_ragas import run_ragas_evaluation
+        report = run_ragas_evaluation(dataset_path, output_path=output_path, top_k=req.top_k)
+    except Exception as exc:
+        logger.exception('Evaluation failed dataset=%s', dataset_path)
+        raise HTTPException(status_code=500, detail=f'Evaluation failed: {exc}') from exc
+
+    return RunEvaluationResponse(success=True, **report)
 
 
 @app.delete('/files/{file_id}', response_model=DeleteFileResponse)

@@ -992,6 +992,62 @@ textarea::placeholder { color: #666; }
   box-shadow: var(--shadow-md);
 }
 
+.cleanupBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.evalInput {
+  width: 100%;
+  padding: 12px 14px;
+  background: #0a0a0a;
+  border: 1px solid #2a2a2a;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.evalResults {
+  margin-top: 12px;
+}
+
+.evalMeta {
+  color: #b3b3b3;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.evalGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.evalCard {
+  background: #0a0a0a;
+  border: 1px solid #2a2a2a;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.evalLabel {
+  color: #888;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: 6px;
+}
+
+.evalValue {
+  color: #fff;
+  font-size: 24px;
+  font-weight: 700;
+}
+
 .emptyText {
   text-align: center;
   padding: 40px;

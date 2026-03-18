@@ -38,10 +38,12 @@ class Settings(BaseSettings):
     image_retrieval_top_k: int = 8
     rerank_top_k: int = 5
     query_expansion_count: int = 3
+    evaluation_max_rows: int = 100
 
     openai_api_key: str = Field(default='')
     openai_base_url: str = Field(default='https://api.openai.com/v1')
     openai_model: str = Field(default='gpt-5-mini-2025-08-07')
+    evaluation_model: str = Field(default='gpt-4.1-nano-2025-04-14')
     embedding_model: str = Field(default='text-embedding-3-large')
     temperature: float = 0.1
     

@@ -320,3 +320,7 @@ Note: current startup already runs `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` fo
 - The backend is the source of truth for allowed ad-hoc image models.
 - Duplicate prevention is by content hash, not filename.
 - `Sync Library` removes stale Qdrant entries whose `doc_id` no longer exists in PostgreSQL.
+
+## Evaluation
+
+For a RAGAS-based evaluation workflow, see [EVALUATION.md].

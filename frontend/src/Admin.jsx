@@ -21,7 +21,9 @@ export default function Admin() {
   const [loginPassword, setLoginPassword] = useState('');
   const [authError, setAuthError] = useState('');
   const [notification, setNotification] = useState(null);
-  const fileInputRef = useState(null);
+  const [evaluationBusy, setEvaluationBusy] = useState(false);
+  const [evaluationDatasetPath, setEvaluationDatasetPath] = useState('eval/sample_ragas_eval.jsonl');
+  const [evaluationResult, setEvaluationResult] = useState(null);
 
   useEffect(() => {
     if (token && isAdmin) loadFiles();
@@ -153,6 +155,30 @@ export default function Admin() {
     }
   }
 
+  async function handleRunEvaluation() {
+    setEvaluationBusy(true);
+    try {
+      const res = await fetch(`${API_BASE}/evaluation/run`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          dataset_path: evaluationDatasetPath.trim() || null,
+        }),
+      });
+      const data = await readApiResponse(res);
+      if (!res.ok) throw new Error(data.detail || 'Evaluation failed');
+      setEvaluationResult(data);
+      showNotification(`Evaluation completed for ${data.samples} samples`, 'success');
+    } catch (err) {
+      showNotification(`Error: ${err.message || err}`, 'error');
+    } finally {
+      setEvaluationBusy(false);
+    }
+  }
+
   if (!token || !isAdmin) {
     return (
       <div className="loginPage">
@@ -277,6 +303,43 @@ export default function Admin() {
               ))}
             </div>
           )}
+        </section>
+
+        <section className="adminSection">
+          <div className="sectionHeader">
+            <h2>Evaluation</h2>
+            <button onClick={handleRunEvaluation} className="cleanupBtn" disabled={evaluationBusy}>
+              {evaluationBusy ? 'Running...' : 'Run Evaluation'}
+            </button>
+          </div>
+          <p>Run RAGAS against a JSONL dataset stored under <code>backend/data</code>.</p>
+          <input
+            type="text"
+            value={evaluationDatasetPath}
+            onChange={(e) => setEvaluationDatasetPath(e.target.value)}
+            placeholder="eval/sample_ragas_eval.jsonl"
+            className="evalInput"
+          />
+
+          {evaluationResult ? (
+            <div className="evalResults">
+              <div className="evalMeta">Dataset: {evaluationResult.dataset_path}</div>
+              <div className="evalMeta">Evaluated rows: {evaluationResult.samples}</div>
+              <div className="evalMeta">Dataset rows: {evaluationResult.total_rows}</div>
+              <div className="evalMeta">Max rows per run: {evaluationResult.max_rows}</div>
+              {evaluationResult.truncated ? (
+                <div className="evalMeta">Only the latest {evaluationResult.max_rows} rows were evaluated.</div>
+              ) : null}
+              <div className="evalGrid">
+                {Object.entries(evaluationResult.summary || {}).map(([name, value]) => (
+                  <div key={name} className="evalCard">
+                    <div className="evalLabel">{name}</div>
+                    <div className="evalValue">{value == null ? 'n/a' : Number(value).toFixed(3)}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </section>
       </main>
     </div>

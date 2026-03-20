@@ -26,18 +26,20 @@ class Settings(BaseSettings):
     upload_dir: Path = Path('data/uploads')
     max_upload_size_mb: int = 30
 
-    chunk_size: int = 900
-    chunk_overlap: int = 150
+    chunk_size: int = 700
+    chunk_overlap: int = 120
 
     qdrant_url: str = 'http://qdrant:6333'
     qdrant_api_key: str = Field(default='')
     qdrant_collection: str = 'rag_chunks'
     qdrant_image_collection: str = 'rag_image_chunks'
 
-    retrieval_top_k: int = 20
+    retrieval_top_k: int = 12
     image_retrieval_top_k: int = 8
-    rerank_top_k: int = 5
-    query_expansion_count: int = 3
+    rerank_top_k: int = 4
+    query_expansion_count: int = 2
+    retrieval_min_score: float = 0.15
+    retrieval_max_per_source: int = 3
     evaluation_max_rows: int = 100
 
     openai_api_key: str = Field(default='')

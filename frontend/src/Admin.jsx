@@ -11,6 +11,10 @@ async function readApiResponse(res) {
   return { detail: await res.text() };
 }
 
+function formatMetricPercent(value) {
+  return value == null ? 'n/a' : `${(Number(value) * 100).toFixed(2)}%`;
+}
+
 export default function Admin() {
   const { theme, toggleTheme } = useTheme();
   const [token, setToken] = useState(localStorage.getItem('token'));
@@ -25,11 +29,15 @@ export default function Admin() {
   const [authError, setAuthError] = useState('');
   const [notification, setNotification] = useState(null);
   const [evaluationBusy, setEvaluationBusy] = useState(false);
+  const [importBusy, setImportBusy] = useState(false);
   const [evaluationDatasetPath, setEvaluationDatasetPath] = useState('eval/sample_ragas_eval.jsonl');
   const [evaluationResult, setEvaluationResult] = useState(null);
 
   useEffect(() => {
-    if (token && isAdmin) loadFiles();
+    if (token && isAdmin) {
+      loadFiles();
+      loadLatestEvaluation();
+    }
   }, [token, isAdmin]);
 
   const FILES_PER_PAGE = 3;
@@ -194,6 +202,45 @@ export default function Admin() {
     }
   }
 
+  async function loadLatestEvaluation() {
+    try {
+      const res = await fetch(`${API_BASE}/evaluation/latest`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await readApiResponse(res);
+      if (!res.ok) return;
+      setEvaluationResult(data);
+    } catch (err) {
+      console.error('Failed to load latest evaluation:', err);
+    }
+  }
+
+  async function handleImportChatsToEvaluation() {
+    setImportBusy(true);
+    try {
+      const res = await fetch(`${API_BASE}/evaluation/import-chats`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          dataset_path: evaluationDatasetPath.trim() || null,
+        }),
+      });
+      const data = await readApiResponse(res);
+      if (!res.ok) throw new Error(data.detail || 'Import failed');
+      showNotification(
+        `Imported ${data.imported} chat pairs. Skipped ${data.skipped_existing} existing and ${data.skipped_invalid} invalid rows.`,
+        'success'
+      );
+    } catch (err) {
+      showNotification(`Error: ${err.message || err}`, 'error');
+    } finally {
+      setImportBusy(false);
+    }
+  }
+
   if (!token || !isAdmin) {
     return (
       <div className="loginPage">
@@ -303,12 +350,16 @@ export default function Admin() {
         <section className="adminSection">
           <div className="sectionHeader">
             <h2>Evaluation</h2>
-            <button onClick={handleRunEvaluation} className="cleanupBtn" disabled={evaluationBusy}>
-              {evaluationBusy ? 'Running...' : 'Run Evaluation'}
-            </button>
+            <div className="fileActions">
+              <button onClick={handleImportChatsToEvaluation} className="cleanupBtn" disabled={importBusy}>
+                {importBusy ? 'Importing...' : 'Import Stored Chats'}
+              </button>
+              <button onClick={handleRunEvaluation} className="cleanupBtn" disabled={evaluationBusy}>
+                {evaluationBusy ? 'Running...' : 'Run Evaluation'}
+              </button>
+            </div>
           </div>
           <p>Test your data file to check how well the system is working.</p>
-
           {evaluationResult ? (
             <div className="evalResults">
               {evaluationResult.truncated ? (
@@ -318,12 +369,11 @@ export default function Admin() {
                 {Object.entries(evaluationResult.summary || {}).map(([name, value]) => (
                   <div key={name} className="evalCard">
                     <div className="evalLabel">{name}</div>
-                    <div className="evalValue">
-                      {value == null ? 'n/a' : (Number(value) * 100).toFixed(2) + '%'}
-                    </div>
+                    <div className="evalValue">{formatMetricPercent(value)}</div>
                   </div>
                 ))}
               </div>
+
             </div>
           ) : null}
         </section>

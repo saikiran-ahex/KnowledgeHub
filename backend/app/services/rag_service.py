@@ -128,17 +128,28 @@ class RagService:
 
     def _expand_query(self, question: str) -> list[str]:
         logger.info('Query expansion started')
+        normalized_question = question.strip()
+        if len(normalized_question) < 12:
+            logger.info('Query expansion skipped: question too short')
+            return []
         prompt = (
             f'Generate {self.settings.query_expansion_count} alternate phrasings for this query. '
             'Return strictly JSON array of strings only. No markdown.'
         )
-        response = self._invoke_chat(f'{prompt}\n\nQuery: {question}')
+        response = self._invoke_chat(f'{prompt}\n\nQuery: {normalized_question}')
         content = str(response.content).strip()
 
         try:
             parsed = json.loads(content)
             if isinstance(parsed, list):
-                variations = [str(item).strip() for item in parsed if str(item).strip()]
+                seen = {normalized_question.lower()}
+                variations = []
+                for item in parsed:
+                    text = str(item).strip()
+                    if not text or text.lower() in seen:
+                        continue
+                    seen.add(text.lower())
+                    variations.append(text)
                 selected = variations[: self.settings.query_expansion_count]
                 logger.info('Query expansion completed variations=%s', len(selected))
                 return selected
@@ -185,6 +196,8 @@ class RagService:
         owner_id = filters.get('owner_id')
         tenant_id = filters.get('tenant_id')
         file_type = filters.get('file_type')
+        source = filters.get('source')
+        doc_id = filters.get('doc_id')
         tags = filters.get('tags')
 
         def field(name: str) -> str:
@@ -199,6 +212,10 @@ class RagService:
             must.append(qmodels.FieldCondition(key=field('tenant_id'), match=qmodels.MatchValue(value=str(tenant_id))))
         if file_type:
             must.append(qmodels.FieldCondition(key=field('file_type'), match=qmodels.MatchValue(value=str(file_type))))
+        if source:
+            must.append(qmodels.FieldCondition(key=field('source'), match=qmodels.MatchValue(value=str(source))))
+        if doc_id:
+            must.append(qmodels.FieldCondition(key=field('doc_id'), match=qmodels.MatchValue(value=str(doc_id))))
         if tags:
             for tag in tags:
                 must.append(qmodels.FieldCondition(key=field('tags'), match=qmodels.MatchValue(value=str(tag))))
@@ -245,6 +262,43 @@ class RagService:
             if len(tags) >= max_tags:
                 break
         return tags
+
+    @staticmethod
+    def _guess_heading(text: str) -> str | None:
+        for line in (text or '').splitlines():
+            cleaned = line.strip()
+            if 4 <= len(cleaned) <= 120:
+                return cleaned
+        return None
+
+    def _finalize_candidates(self, candidates: list[Document], limit: int | None = None) -> list[Document]:
+        deduped = self._dedupe_docs(candidates)
+        deduped.sort(key=lambda doc: float(doc.metadata.get('score', 0.0)), reverse=True)
+        per_source: dict[str, int] = {}
+        selected: list[Document] = []
+        for doc in deduped:
+            score = float(doc.metadata.get('score', 0.0))
+            if score < self.settings.retrieval_min_score:
+                continue
+            source = str(doc.metadata.get('source', 'unknown'))
+            current = per_source.get(source, 0)
+            if current >= self.settings.retrieval_max_per_source:
+                continue
+            per_source[source] = current + 1
+            selected.append(doc)
+            if limit is not None and len(selected) >= limit:
+                break
+        return selected
+
+    def _rerank_documents(self, candidates: list[Document], question: str) -> tuple[list[Document], bool]:
+        if self.reranker is None:
+            return candidates[: self.settings.rerank_top_k], False
+        try:
+            reranked = self.reranker.compress_documents(candidates, query=question)
+            return reranked[: self.settings.rerank_top_k], False
+        except Exception as exc:
+            logger.warning('Rerank failed; falling back to top retrieved docs error=%s', exc)
+            return candidates[: self.settings.rerank_top_k], True
 
     def _ingest_image(self, file_path: Path, metadata: dict) -> int:
         source_name = self._source_name(file_path, metadata)
@@ -303,10 +357,13 @@ class RagService:
 
         docs = []
         for idx, chunk in enumerate(chunks):
+            heading = self._guess_heading(chunk)
             chunk_meta = {
                 'source': source_name,
                 'type': 'text',
                 'chunk_id': f"{metadata.get('doc_id', file_path.stem)}:{idx}",
+                'heading': heading,
+                'chunk_size_chars': len(chunk),
                 **metadata,
             }
             docs.append(Document(page_content=chunk, metadata=chunk_meta))
@@ -349,6 +406,8 @@ class RagService:
                             'page_no': payload.get('page_no'),
                             'content_hash': payload.get('content_hash'),
                             'tags': payload.get('tags'),
+                            'heading': payload.get('heading'),
+                            'chunk_size_chars': payload.get('chunk_size_chars'),
                         },
                     )
                 )
@@ -413,16 +472,15 @@ class RagService:
 
         def _search_text(query: str, query_vector: list[float]) -> list[Document]:
             logger.info('Text retrieval started query="%s"', query[:120])
-            result = self.qdrant_client.query_points(
+            result = self.qdrant_client.search(
                 collection_name=self.settings.qdrant_collection,
-                query=query_vector,
+                query_vector=query_vector,
                 limit=retrieve_k,
                 with_payload=True,
                 query_filter=qdrant_filter,
             )
-            points = result.points or []
             found: list[Document] = []
-            for point in points:
+            for point in result or []:
                 payload = point.payload or {}
                 metadata = self._payload_metadata(payload)
                 source = self._normalize_source_name(str(self._payload_value(payload, 'source') or 'unknown'))
@@ -442,6 +500,8 @@ class RagService:
                             'page_no': self._payload_value(payload, 'page_no'),
                             'content_hash': self._payload_value(payload, 'content_hash'),
                             'tags': self._payload_value(payload, 'tags'),
+                            'heading': self._payload_value(payload, 'heading'),
+                            'chunk_size_chars': self._payload_value(payload, 'chunk_size_chars'),
                         },
                     )
                 )
@@ -454,7 +514,7 @@ class RagService:
                 text_candidates.extend(f.result())
 
         image_candidates = self._retrieve_image_candidates(queries, self.settings.image_retrieval_top_k, filters=filters, owner_ids=owner_ids)
-        candidates = self._dedupe_docs(text_candidates + image_candidates)
+        candidates = self._finalize_candidates(text_candidates + image_candidates, limit=retrieve_k)
         logger.info(
             'Retrieval completed text_docs=%s image_docs=%s total=%s',
             len(text_candidates),
@@ -508,6 +568,7 @@ class RagService:
                     'content_hash': doc.metadata.get('content_hash'),
                     'tags': doc.metadata.get('tags'),
                     'type': doc.metadata.get('type'),
+                    'heading': doc.metadata.get('heading'),
                 }
 
         sources = list(source_scores.values())
@@ -589,8 +650,13 @@ class RagService:
         if self.reranker is not None:
             logger.info('Rerank started candidate_docs=%s', len(candidates))
             rerank_start = perf_counter()
-            selected_docs = self.reranker.compress_documents(candidates, query=question)
-            logger.info('Rerank completed selected_docs=%s elapsed_ms=%s', len(selected_docs), int((perf_counter() - rerank_start) * 1000))
+            selected_docs, fallback_used = self._rerank_documents(candidates, question)
+            logger.info(
+                'Rerank completed selected_docs=%s fallback_used=%s elapsed_ms=%s',
+                len(selected_docs),
+                fallback_used,
+                int((perf_counter() - rerank_start) * 1000),
+            )
         else:
             selected_docs = candidates[: self.settings.rerank_top_k]
             logger.info('Rerank skipped using top docs selected_docs=%s', len(selected_docs))
@@ -665,8 +731,12 @@ class RagService:
 
             if self.reranker is not None:
                 rerank_start = perf_counter()
-                selected_docs = self.reranker.compress_documents(candidates, query=question)
-                logger.info('Ask-with-file rerank elapsed_ms=%s', int((perf_counter() - rerank_start) * 1000))
+                selected_docs, fallback_used = self._rerank_documents(candidates, question)
+                logger.info(
+                    'Ask-with-file rerank elapsed_ms=%s fallback_used=%s',
+                    int((perf_counter() - rerank_start) * 1000),
+                    fallback_used,
+                )
             else:
                 selected_docs = candidates[: self.settings.rerank_top_k]
 

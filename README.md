@@ -20,8 +20,8 @@ KnowledgeHub is a multimodal RAG application with:
 ### Shared Library Model
 
 - Indexed knowledge-base files are admin-only.
-- Files uploaded from the admin panel are stored in PostgreSQL and indexed into Qdrant with `owner_id='admin'`.
-- `/ask` and `/chat` retrieve only from that shared admin-owned corpus.
+- Files uploaded from the admin panel are stored in PostgreSQL and indexed into Qdrant under the uploading admin user's `user_id`.
+- `/ask` and `/chat` retrieve only from the shared corpus owned by current admin accounts.
 - Regular users do not have personal indexed file libraries.
 
 ### Ad-hoc Files
@@ -88,6 +88,8 @@ KnowledgeHub is a multimodal RAG application with:
 - Ad-hoc image model selection
 - Source attribution in answers
 - Library sync for stale/orphaned Qdrant data
+- Tuned retrieval controls for score thresholding and per-source caps
+- RAGAS evaluation against curated JSONL datasets
 
 ## API
 
@@ -117,6 +119,7 @@ Notes:
 - `/ask` uses the shared admin-indexed corpus.
 - `/chat` uses the shared admin-indexed corpus plus an optional ad-hoc attached file for that request.
 - `/ask-with-file` is a direct ad-hoc retrieval route and does not require login.
+- `/ask` accepts optional retrieval filters such as `source`, `doc_id`, `file_type`, and `tags`.
 
 ### Conversations
 

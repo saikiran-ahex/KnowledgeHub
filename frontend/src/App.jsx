@@ -42,15 +42,18 @@ function Sources({ sources }) {
   );
 }
 
-function ChatMessage({ role, content, sources, filePreviewUrl, fileName }) {
+function ChatMessage({ role, content, sources, filePreviewUrl, fileName, image_base64 }) {
+  const imgSrc = image_base64
+    ? `data:image/jpeg;base64,${image_base64}`
+    : filePreviewUrl;
   return (
     <div className={`msg ${role}`}>
       {role === 'assistant' && <div className="botName">Zill</div>}
       <div className={`messageStack ${role}`} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-        {filePreviewUrl && (
+        {imgSrc && (
           <img
             className="chatImagePreview"
-            src={filePreviewUrl}
+            src={imgSrc}
             alt={fileName || 'uploaded image'}
             style={{ display: 'block' }}
           />
@@ -574,7 +577,7 @@ function ChatApp() {
             </div>
           ) : null}
 
-          {history.map((m, i) => <ChatMessage key={i} role={m.role} content={m.content} sources={m.sources} filePreviewUrl={m.filePreviewUrl} fileName={m.fileName} />)}
+          {history.map((m, i) => <ChatMessage key={i} role={m.role} content={m.content} sources={m.sources} filePreviewUrl={m.filePreviewUrl} fileName={m.fileName} image_base64={m.image_base64} />)}
           {busy && (
             <div className="msg assistant">
               <div className="botName">Zill</div>

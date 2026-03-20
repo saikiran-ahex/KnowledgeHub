@@ -10,6 +10,7 @@ class StoredChatTurn(ChatTurn):
     id: int
     sources: list[dict] = []
     created_at: str
+    image_base64: str | None = None
 
 
 class RetrievalFilters(BaseModel):

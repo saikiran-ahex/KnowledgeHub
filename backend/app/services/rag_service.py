@@ -533,12 +533,14 @@ class RagService:
             ]
         )
 
+        system_msg = (
+            'You are a helpful assistant with access to a document knowledge base. '
+            'If context is provided, use it to answer. '
+            'If no context is provided, answer conversationally from your general knowledge or the conversation history.'
+        )
         answer_prompt = ChatPromptTemplate.from_messages(
             [
-                (
-                    'system',
-                    'You are a precise multimodal RAG assistant. Use only context below. If missing info, say it clearly.',
-                ),
+                ('system', system_msg),
                 (
                     'human',
                     'Conversation history:\n{history}\n\nQuestion:\n{question}\n\nContext:\n{context}\n\nAnswer directly. Do not add a sources section.',
@@ -644,8 +646,9 @@ class RagService:
         candidates = self._retrieve_candidates(queries, retrieve_k, filters=filters, owner_ids=owner_ids)
         logger.info('Retrieval elapsed_ms=%s', int((perf_counter() - retrieval_start) * 1000))
         if not candidates:
-            logger.info('Ask pipeline completed: no candidates elapsed_ms=%s', int((perf_counter() - ask_start) * 1000))
-            return 'No library content is available yet. Ask an admin to upload files first.', []
+            logger.info('Ask pipeline: no candidates, answering directly elapsed_ms=%s', int((perf_counter() - ask_start) * 1000))
+            answer_text, _ = self._answer_from_documents(question, [], history=history)
+            return answer_text, []
 
         if self.reranker is not None:
             logger.info('Rerank started candidate_docs=%s', len(candidates))

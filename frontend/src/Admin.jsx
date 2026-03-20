@@ -146,6 +146,30 @@ export default function Admin() {
     }
   }
 
+  async function handleDownload(fileId) {
+    try {
+      const res = await fetch(`${API_BASE}/files/download/${fileId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const data = await readApiResponse(res);
+        throw new Error(data.detail || 'Download failed');
+      }
+      const disposition = res.headers.get('content-disposition') || '';
+      const match = disposition.match(/filename="?([^"]+)"?/);
+      const filename = match ? match[1] : `file-${fileId}`;
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      showNotification(`Error: ${err.message || err}`, 'error');
+    }
+  }
+
   async function handleDelete(fileId) {
     try {
       const res = await fetch(`${API_BASE}/files/${fileId}`, {

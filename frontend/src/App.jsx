@@ -20,6 +20,7 @@ const EXAMPLE_QUESTIONS = [
   "Explain the technical details"
 ];
 
+
 const DEFAULT_CHAT = { id: 'draft', title: 'New Chat', messages: [], isDraft: true };
 const DEFAULT_CHATS = [DEFAULT_CHAT];
 
@@ -110,7 +111,7 @@ function ChatApp() {
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [username, setUsername] = useState(localStorage.getItem('username') || '');
   const [chats, setChats] = useState(DEFAULT_CHATS);
-  const [activeChat, setActiveChat] = useState(DEFAULT_CHAT.id);
+  const [activeChat, setActiveChat] = useState(localStorage.getItem('activeChat') || DEFAULT_CHAT.id);
   const [question, setQuestion] = useState('');
   const [busy, setBusy] = useState(false);
   const [file, setFile] = useState(null);
@@ -244,10 +245,18 @@ function ChatApp() {
     loadConversations();
   }, [token]);
 
+  // Save activeChat to localStorage whenever it changes
+  useEffect(() => {
+    if (activeChat) {
+      localStorage.setItem('activeChat', activeChat);
+    }
+  }, [activeChat]);
+
   function logout() {
     localStorage.removeItem('token');
     localStorage.removeItem('username');
     localStorage.removeItem('is_admin');
+    localStorage.removeItem('activeChat');
     setToken(null);
     setUsername('');
     setChats(DEFAULT_CHATS);
@@ -452,6 +461,15 @@ function ChatApp() {
     }
   }
 
+  function truncateTitle(title) {
+    const words = title.split(' ');
+    if (words.length > 4) {
+      return words.slice(0, 4).join(' ') + '...';
+    }
+    return title;
+  }
+
+
   if (!token) {
     return (
       <div className="loginPage">
@@ -501,11 +519,32 @@ function ChatApp() {
     );
   }
 
+
+
   return (
     <div className="app">
       <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="sidebarHeader">
-          <h2>💬 Conversations</h2>
+          <h2>
+            <svg
+              className="conversationIcon"
+              xmlns="http://www.w3.org/2000/svg"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+              <path d="M8 10h.01"></path>
+              <path d="M12 10h.01"></path>
+              <path d="M16 10h.01"></path>
+            </svg>
+            Conversations
+          </h2>
           <button onClick={newChat} className="newChatBtn">+</button>
         </div>
 
@@ -516,7 +555,7 @@ function ChatApp() {
               className={`chatItem ${activeChat === chat.id ? 'active' : ''}`}
               onClick={() => setActiveChat(chat.id)}
             >
-              <span className="chatTitle">{chat.title}</span>
+              <span className="chatTitle">{truncateTitle(chat.title)}</span>
               <button
                 onClick={async (e) => {
                   e.stopPropagation();
@@ -594,7 +633,24 @@ function ChatApp() {
         </div>
 
         <div className="inputArea">
-          {file ? <div className="fileChip">📎 {file.name} <button onClick={() => setFile(null)}>✕</button></div> : null}
+          {file ? <div className="fileChip">
+            <svg
+              className="fileIcon"
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <circle cx="9" cy="9" r="2"></circle>
+              <path d="M21 15l-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>
+            </svg>
+            {file.name} <button onClick={() => setFile(null)}>✕</button></div> : null}
           <div className="chatInput">
             <label className="fileBtn">
               <TiAttachment />

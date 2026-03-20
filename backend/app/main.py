@@ -11,7 +11,7 @@ from uuid import uuid4
 import psycopg
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 from app.config import get_settings
 from app.logging_config import setup_logging
@@ -39,8 +39,6 @@ app.add_middleware(
     allow_methods=['*'],
     allow_headers=['*'],
 )
-
-app.mount('/uploads', StaticFiles(directory=str(settings.upload_dir)), name='uploads')
 
 
 _TRIVIAL_CHAT_PATTERNS = {
@@ -427,13 +425,30 @@ def get_files(current_user: dict = Depends(get_admin_user)) -> list[FileRecord]:
     records = []
     for f in files:
         p = Path(f['file_path'])
-        relative = p.relative_to(settings.upload_dir)
         records.append(FileRecord(
             **{k: v for k, v in f.items() if k != 'file_path'},
-            download_url=f'/uploads/{relative.as_posix()}',
+            download_url=f'/files/download/{f["id"]}',
             file_size=p.stat().st_size if p.exists() else None,
         ))
     return records
+
+
+@app.get('/files/download/{file_id}')
+def download_file(file_id: int, current_user: dict = Depends(get_admin_user)) -> FileResponse:
+    file_record = database.get_admin_file_by_id(file_id)
+    if not file_record:
+        raise HTTPException(status_code=404, detail='File not found')
+    file_path = Path(file_record['file_path']).resolve()
+    upload_dir = settings.upload_dir.resolve()
+    if not str(file_path).startswith(str(upload_dir)):
+        raise HTTPException(status_code=400, detail='Invalid file path')
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail='File not found on disk')
+    return FileResponse(
+        path=str(file_path),
+        filename=file_record['filename'],
+        media_type='application/octet-stream',
+    )
 
 
 @app.post('/files/cleanup-vectors', response_model=CleanupVectorsResponse)

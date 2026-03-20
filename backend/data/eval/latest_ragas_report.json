@@ -1,0 +1,2267 @@
+{
+  "dataset_path": "/app/data/eval/sample_ragas_eval.jsonl",
+  "output_path": "/app/data/eval/latest_ragas_report.json",
+  "samples": 50,
+  "total_rows": 50,
+  "max_rows": 100,
+  "truncated": false,
+  "use_rerank": true,
+  "summary": {
+    "faithfulness": 0.9423333333333334,
+    "answer_relevancy": 0.6749472491525059,
+    "context_precision": 0.9616666666064166,
+    "context_recall": 0.9623434343434344
+  },
+  "results": [
+    {
+      "id": "rad-01",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "What is the purpose of the Radioactivity\u2014Theory and Practice chapter?",
+      "ground_truth": "The chapter provides general information about radioactivity, including definitions, types of decay, general considerations related to decay and counting, radionuclide production, purity, labeling, and instrumentation for detecting and measuring radioactive emissions.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "What is the purpose of the Radioactivity\u2014Theory and Practice chapter?",
+        "What is the aim of the \"Radioactivity\u2014Theory and Practice\" chapter?",
+        "What is the objective of the chapter titled \"Radioactivity\u2014Theory and Practice\"?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "The purpose of this chapter is to provide information regarding radioactivity\u2014 including",
+        "BRIEFING",
+        "Radioactivity\u2014Theory and Practice \u27e81821\u27e9."
+      ],
+      "retrieved_contexts": [
+        "The purpose of this chapter is to provide information regarding radioactivity\u2014 including \ndefinitions, types of decay, and general considerations relating to radioactive decay, \ncounting, radionuclide production, purity, and labeling\u2014as well as instrumentation for \ndetection and measurement of radioactive emissions. \n Specific information on standards for radionuclide identification and assay, including \ninstrument qualification, performance checks, identification of radionuclides and",
+        "BRIEFING \n\u27e81821\u27e9 Radioactivity\u2014Theory and Practice. The current general chapter Radioactivity \n\u27e8821\u27e9 is divided into two major sections, General Considerations and Identification and \nAssay of Radionuclides, both of which contain subsections with general information \nabout radioactivity. Because of the nature of the information presented in these \nsubsections, they are being moved to this proposed new general information chapter \nRadioactivity\u2014Theory and Practice \u27e81821\u27e9.",
+        "Radioactivity\u2014Theory and Practice \u27e81821\u27e9. \n \n(CHM4: R. Ravichandran.) Correspondence Number\u2014C154279 \n \nAdd the following: \n\u25aa\u27e81821\u27e9 RADIOACTIVITY\u2014THEORY AND \nPRACTICE \n \n1. INTRODUCTION \n2. TYPES OF DECAY \n2.1 Alpha Decay \n2.2 Beta Decay \n2.3 Electron Capture Decay \n2.4 Isomeric Transition \n \n3. GENERAL CONSIDERATIONS \n3.1 Radioactivity \n3.2 Fundamental Decay Law \n3.3 Counting Efficiency \n3.4 Background \n3.5 Statistics of Counting \n3.6\u2009Minimum Detectable Activity \n3.7 Limit of Quantification"
+      ],
+      "response": "The purpose is to provide information about radioactivity\u2014definitions, types of decay, and general considerations related to radioactive decay, counting, radionuclide production, purity, and labeling\u2014plus instrumentation for detection and measurement of radioactive emissions, and specific standards for radionuclide identification and assay (including instrument qualification, performance checks, and radionuclide identification/assay).",
+      "user_input": "What is the purpose of the Radioactivity\u2014Theory and Practice chapter?",
+      "reference": "The chapter provides general information about radioactivity, including definitions, types of decay, general considerations related to decay and counting, radionuclide production, purity, labeling, and instrumentation for detecting and measuring radioactive emissions.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.39735179225255407,
+      "context_precision": 0.9999999999666667,
+      "context_recall": 1.0
+    },
+    {
+      "id": "rad-02",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "Who should carry out operations involving radioactive drugs and devices?",
+      "ground_truth": "Operations involving radioactive drugs and devices should be carried out by or under the supervision of personnel appropriately trained in handling radioactive materials.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "Who should carry out operations involving radioactive drugs and devices?",
+        "Who is qualified to perform procedures involving radioactive drugs and devices?",
+        "Which professionals should carry out operations using radioactive drugs and devices?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "maintain safety for workers, patients, and the public. All operations involving these",
+        "EMISSIONS AND APPLICATIONS",
+        "appropriate State agency, or similar governmental agencies outside of the United"
+      ],
+      "retrieved_contexts": [
+        "maintain safety for workers, patients, and the public. All operations involving these \narticles should be carried out by or under the supervision of personnel who have been \nappropriately trained in the handling of radioactive materials. \n The facilities for the production, storage, and use of radioactive drugs and devices are \ngenerally subject to licensing by the U.S. Nuclear Regulatory Commission, an \nappropriate State agency, or similar governmental agencies outside of the United",
+        "EMISSIONS AND APPLICATIONS \n4.1 Ionization Chambers \n4.2 Liquid Scintillation Counters \n4.3\u2009Nuclear Spectroscopy Systems \n4.4 Detector Systems for Chromatographic Applications \n \n5. GLOSSARY \n6. REFERENCES \n \n1. INTRODUCTION \n Radioactive drugs and devices require specialized techniques in their production, \ntesting, handling, dispensing, and administration to ensure optimal effectiveness and \nmaintain safety for workers, patients, and the public. All operations involving these",
+        "appropriate State agency, or similar governmental agencies outside of the United \nStates. Most radioactive drugs and devices, although not identified as hazardous drugs, \nare classified as hazardous materials and are therefore subject to other regulations \nrelating to transportation, environmental release, and workplace safety. \n The purpose of this chapter is to provide information regarding radioactivity\u2014 including"
+      ],
+      "response": "They should be carried out by, or under the supervision of, personnel who have been appropriately trained in the handling of radioactive materials.",
+      "user_input": "Who should carry out operations involving radioactive drugs and devices?",
+      "reference": "Operations involving radioactive drugs and devices should be carried out by or under the supervision of personnel appropriately trained in handling radioactive materials.",
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.7451054410253602,
+      "context_precision": 0.9999999999666667,
+      "context_recall": 1.0
+    },
+    {
+      "id": "rad-03",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "Which agencies generally license facilities for the production, storage, and use of radioactive drugs and devices?",
+      "ground_truth": "Such facilities are generally licensed by the U.S. Nuclear Regulatory Commission, an appropriate state agency, or similar governmental agencies outside the United States.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "Which agencies generally license facilities for the production, storage, and use of radioactive drugs and devices?",
+        "Which agencies typically issue licenses for facilities that produce, store, and use radioactive drugs and devices?",
+        "Which regulatory bodies generally license facilities involved in the production, storage, and use of radioactive drugs and devices?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "maintain safety for workers, patients, and the public. All operations involving these",
+        "appropriate State agency, or similar governmental agencies outside of the United",
+        "EMISSIONS AND APPLICATIONS"
+      ],
+      "retrieved_contexts": [
+        "maintain safety for workers, patients, and the public. All operations involving these \narticles should be carried out by or under the supervision of personnel who have been \nappropriately trained in the handling of radioactive materials. \n The facilities for the production, storage, and use of radioactive drugs and devices are \ngenerally subject to licensing by the U.S. Nuclear Regulatory Commission, an \nappropriate State agency, or similar governmental agencies outside of the United",
+        "appropriate State agency, or similar governmental agencies outside of the United \nStates. Most radioactive drugs and devices, although not identified as hazardous drugs, \nare classified as hazardous materials and are therefore subject to other regulations \nrelating to transportation, environmental release, and workplace safety. \n The purpose of this chapter is to provide information regarding radioactivity\u2014 including",
+        "EMISSIONS AND APPLICATIONS \n4.1 Ionization Chambers \n4.2 Liquid Scintillation Counters \n4.3\u2009Nuclear Spectroscopy Systems \n4.4 Detector Systems for Chromatographic Applications \n \n5. GLOSSARY \n6. REFERENCES \n \n1. INTRODUCTION \n Radioactive drugs and devices require specialized techniques in their production, \ntesting, handling, dispensing, and administration to ensure optimal effectiveness and \nmaintain safety for workers, patients, and the public. All operations involving these"
+      ],
+      "response": "The U.S. Nuclear Regulatory Commission, an appropriate State agency, or similar governmental agencies outside the United States.",
+      "user_input": "Which agencies generally license facilities for the production, storage, and use of radioactive drugs and devices?",
+      "reference": "Such facilities are generally licensed by the U.S. Nuclear Regulatory Commission, an appropriate state agency, or similar governmental agencies outside the United States.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.5964406612165278,
+      "context_precision": 0.99999999995,
+      "context_recall": 1.0
+    },
+    {
+      "id": "rad-04",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "Besides licensing, what other regulations often apply to radioactive drugs and devices?",
+      "ground_truth": "They are often classified as hazardous materials and are subject to regulations related to transportation, environmental release, and workplace safety.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "Besides licensing, what other regulations often apply to radioactive drugs and devices?",
+        "Aside from licensing requirements, what additional regulations typically govern radioactive drugs and devices?",
+        "Beyond licensing, what other legal or regulatory controls commonly apply to radiopharmaceuticals and radioactive medical devices?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "appropriate State agency, or similar governmental agencies outside of the United",
+        "maintain safety for workers, patients, and the public. All operations involving these",
+        "EMISSIONS AND APPLICATIONS"
+      ],
+      "retrieved_contexts": [
+        "appropriate State agency, or similar governmental agencies outside of the United \nStates. Most radioactive drugs and devices, although not identified as hazardous drugs, \nare classified as hazardous materials and are therefore subject to other regulations \nrelating to transportation, environmental release, and workplace safety. \n The purpose of this chapter is to provide information regarding radioactivity\u2014 including",
+        "maintain safety for workers, patients, and the public. All operations involving these \narticles should be carried out by or under the supervision of personnel who have been \nappropriately trained in the handling of radioactive materials. \n The facilities for the production, storage, and use of radioactive drugs and devices are \ngenerally subject to licensing by the U.S. Nuclear Regulatory Commission, an \nappropriate State agency, or similar governmental agencies outside of the United",
+        "EMISSIONS AND APPLICATIONS \n4.1 Ionization Chambers \n4.2 Liquid Scintillation Counters \n4.3\u2009Nuclear Spectroscopy Systems \n4.4 Detector Systems for Chromatographic Applications \n \n5. GLOSSARY \n6. REFERENCES \n \n1. INTRODUCTION \n Radioactive drugs and devices require specialized techniques in their production, \ntesting, handling, dispensing, and administration to ensure optimal effectiveness and \nmaintain safety for workers, patients, and the public. All operations involving these"
+      ],
+      "response": "They are subject to regulations for hazardous materials \u2014 specifically rules governing transportation, environmental release, and workplace safety.",
+      "user_input": "Besides licensing, what other regulations often apply to radioactive drugs and devices?",
+      "reference": "They are often classified as hazardous materials and are subject to regulations related to transportation, environmental release, and workplace safety.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.49104292699040913,
+      "context_precision": 0.9999999999,
+      "context_recall": 1.0
+    },
+    {
+      "id": "rad-05",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "What does radioactive decay mean in the chapter?",
+      "ground_truth": "Radioactive decay is the process by which an unstable nuclide transitions to a lower-energy configuration.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "What does radioactive decay mean in the chapter?",
+        "How is radioactive decay defined in this chapter?",
+        "What does the chapter say radioactive decay means?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "instrument qualification, performance checks, identification of radionuclides and",
+        "The purpose of this chapter is to provide information regarding radioactivity\u2014 including",
+        "time). The rate of decay for each radionuclide is a unique and constant value, which"
+      ],
+      "retrieved_contexts": [
+        "instrument qualification, performance checks, identification of radionuclides and \nradionuclidic impurities, and assay of radionuclides are provided in Radioactivity \u27e8821\u27e9. \n \n2. TYPES OF DECAY \n Radioactive decay is the process by which an unstable nuclide transitions to a lower \nenergy configuration. Depending on the particular starting radionuclide, the result of the \ntransition may be either a stable nuclide or a different radionuclide. Typically, these",
+        "The purpose of this chapter is to provide information regarding radioactivity\u2014 including \ndefinitions, types of decay, and general considerations relating to radioactive decay, \ncounting, radionuclide production, purity, and labeling\u2014as well as instrumentation for \ndetection and measurement of radioactive emissions. \n Specific information on standards for radionuclide identification and assay, including \ninstrument qualification, performance checks, identification of radionuclides and",
+        "time). The rate of decay for each radionuclide is a unique and constant value, which \ngives rise to the term \u201cdecay constant\u201d. \n Each radionuclide\u2019s rate of decay is a unique and constant value (its decay constant) \nand can be described by the following equation: \nA = \u03bbN \nA = amount of radioactivity in a source at a given time \n\u03bb = rate of decay of the radionuclide \nN = number of radioactive atoms \nThe traditional unit for radioactivity is the Curie (Ci), which is equal to 3.7\u2009\u00d7\u20091010 atoms"
+      ],
+      "response": "In the chapter, radioactive decay is defined as the process by which an unstable nuclide transitions to a lower\u2011energy configuration. The transition may produce either a stable nuclide or a different radionuclide. Each radionuclide has a unique, constant rate of decay (the decay constant, \u03bb), and activity is given by A = \u03bbN, where A is the amount of radioactivity, \u03bb the decay rate, and N the number of radioactive atoms. The chapter also notes the traditional unit, the Curie (Ci), and gives 3.7 \u00d7 10^10 (the provided excerpt is incomplete after this value).",
+      "user_input": "What does radioactive decay mean in the chapter?",
+      "reference": "Radioactive decay is the process by which an unstable nuclide transitions to a lower-energy configuration.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.789699926628308,
+      "context_precision": 0.99999999995,
+      "context_recall": 1.0
+    },
+    {
+      "id": "rad-06",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "What can be the result of radioactive decay depending on the starting radionuclide?",
+      "ground_truth": "The result may be either a stable nuclide or a different radionuclide.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "What can be the result of radioactive decay depending on the starting radionuclide?",
+        "How does the end product of radioactive decay vary with the original radionuclide?",
+        "What decay products can form from different starting radionuclides?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "instrument qualification, performance checks, identification of radionuclides and",
+        "and is generally limited to elements with an atomic number >83. In some cases, beta",
+        "decay, the number of protons and neutrons remains the same in an isomeric transition."
+      ],
+      "retrieved_contexts": [
+        "instrument qualification, performance checks, identification of radionuclides and \nradionuclidic impurities, and assay of radionuclides are provided in Radioactivity \u27e8821\u27e9. \n \n2. TYPES OF DECAY \n Radioactive decay is the process by which an unstable nuclide transitions to a lower \nenergy configuration. Depending on the particular starting radionuclide, the result of the \ntransition may be either a stable nuclide or a different radionuclide. Typically, these",
+        "and is generally limited to elements with an atomic number >83. In some cases, beta \nparticles and gamma rays may also be emitted during alpha decay. An example of a \nradionuclide that decays by alpha decay is: \nRadium-226 \u2192 Radon-222 \n2.2 Beta Decay \nBeta decay is radioactive decay with the emission of an electron. This type of decay \ntypically occurs in neutron-excessive radionuclides wherein a neutron is transformed",
+        "decay, the number of protons and neutrons remains the same in an isomeric transition. \nIsomeric transition generally occurs in radionuclides that are metastable. An example of \na radionuclide that decays by isomeric transition is: \nTechnetium-99m \u2192 Technetium-99 \n \n3. GENERAL CONSIDERATIONS \n3.1 Radioactivity \n Radioactive decay is a first-order process (i.e., a fraction of atoms decay per unit \ntime). The rate of decay for each radionuclide is a unique and constant value, which"
+      ],
+      "response": "Depending on the starting radionuclide, the decay may produce either a stable nuclide or a different radionuclide.",
+      "user_input": "What can be the result of radioactive decay depending on the starting radionuclide?",
+      "reference": "The result may be either a stable nuclide or a different radionuclide.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.7433807395030259,
+      "context_precision": 0.8333333332916666,
+      "context_recall": 1.0
+    },
+    {
+      "id": "rad-07",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "How does the chapter broadly classify radiation emitted during decay?",
+      "ground_truth": "It classifies emitted radiation broadly as either particulate or nonparticulate.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "How does the chapter broadly classify radiation emitted during decay?",
+        "How does the chapter generally categorize the radiation produced during radioactive decay?",
+        "In broad terms, how does the chapter classify the types of radiation emitted during decay?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "transition may be either a stable nuclide or a different radionuclide. Typically, these",
+        "The purpose of this chapter is to provide information regarding radioactivity\u2014 including",
+        "and is generally limited to elements with an atomic number >83. In some cases, beta"
+      ],
+      "retrieved_contexts": [
+        "transition may be either a stable nuclide or a different radionuclide. Typically, these \ntransitions are accompanied by the emission of radiation from the nucleus, which is \nbroadly classified as either particulate or nonparticulate. Some radionuclides emit \nmultiple types of radiation in this process, whereas others emit only a single type. The \nmain types of particulate radiation commonly seen in nuclear medicine are alpha, beta,",
+        "The purpose of this chapter is to provide information regarding radioactivity\u2014 including \ndefinitions, types of decay, and general considerations relating to radioactive decay, \ncounting, radionuclide production, purity, and labeling\u2014as well as instrumentation for \ndetection and measurement of radioactive emissions. \n Specific information on standards for radionuclide identification and assay, including \ninstrument qualification, performance checks, identification of radionuclides and",
+        "and is generally limited to elements with an atomic number >83. In some cases, beta \nparticles and gamma rays may also be emitted during alpha decay. An example of a \nradionuclide that decays by alpha decay is: \nRadium-226 \u2192 Radon-222 \n2.2 Beta Decay \nBeta decay is radioactive decay with the emission of an electron. This type of decay \ntypically occurs in neutron-excessive radionuclides wherein a neutron is transformed"
+      ],
+      "response": "It states radiation emitted during decay is broadly classified as either particulate or nonparticulate.",
+      "user_input": "How does the chapter broadly classify radiation emitted during decay?",
+      "reference": "It classifies emitted radiation broadly as either particulate or nonparticulate.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.8534437393497238,
+      "context_precision": 0.9999999999,
+      "context_recall": 1.0
+    },
+    {
+      "id": "rad-08",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "What are the main particulate radiation types commonly seen in nuclear medicine?",
+      "ground_truth": "The main particulate radiation types commonly seen in nuclear medicine are alpha particles, beta particles, and positrons.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "What are the main particulate radiation types commonly seen in nuclear medicine?",
+        "Which types of particulate radiation are most commonly encountered in nuclear medicine?",
+        "What are the primary particulate radiation forms typically observed in nuclear medicine procedures?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "main types of particulate radiation commonly seen in nuclear medicine are alpha, beta,",
+        "transition may be either a stable nuclide or a different radionuclide. Typically, these",
+        "the orbital electrons. Nuclear medicine imaging is accomplished through detection and"
+      ],
+      "retrieved_contexts": [
+        "main types of particulate radiation commonly seen in nuclear medicine are alpha, beta, \nand positron. Nonparticulate types of radiation include gamma rays and X-rays. Strictly \nspeaking, X-rays do not originate in the nucleus but rather in the electron orbitals; \nhowever, X-rays are the result of interactions between radiation from the nucleus and \nthe orbital electrons. Nuclear medicine imaging is accomplished through detection and",
+        "transition may be either a stable nuclide or a different radionuclide. Typically, these \ntransitions are accompanied by the emission of radiation from the nucleus, which is \nbroadly classified as either particulate or nonparticulate. Some radionuclides emit \nmultiple types of radiation in this process, whereas others emit only a single type. The \nmain types of particulate radiation commonly seen in nuclear medicine are alpha, beta,",
+        "the orbital electrons. Nuclear medicine imaging is accomplished through detection and \nlocalization of nonparticulate radiation, whereas therapeutic effects arise from the \nenergy deposited in the target organ by particulate radiation. \n2.1 Alpha Decay \nAlpha decay is radioactive decay with the emission of alpha particles, or helium nuclei, \nand is generally limited to elements with an atomic number >83. In some cases, beta"
+      ],
+      "response": "Alpha, beta, and positron particles.",
+      "user_input": "What are the main particulate radiation types commonly seen in nuclear medicine?",
+      "reference": "The main particulate radiation types commonly seen in nuclear medicine are alpha particles, beta particles, and positrons.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.4210154269481539,
+      "context_precision": 0.99999999995,
+      "context_recall": 1.0
+    },
+    {
+      "id": "rad-09",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "What nonparticulate radiation types are named in the chapter?",
+      "ground_truth": "The nonparticulate radiation types named are gamma rays and X-rays.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "What nonparticulate radiation types are named in the chapter?",
+        "Which nonparticulate types of radiation are mentioned in the chapter?",
+        "Which non-particulate forms of radiation does the chapter identify?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "main types of particulate radiation commonly seen in nuclear medicine are alpha, beta,",
+        "transition may be either a stable nuclide or a different radionuclide. Typically, these",
+        "The purpose of this chapter is to provide information regarding radioactivity\u2014 including"
+      ],
+      "retrieved_contexts": [
+        "main types of particulate radiation commonly seen in nuclear medicine are alpha, beta, \nand positron. Nonparticulate types of radiation include gamma rays and X-rays. Strictly \nspeaking, X-rays do not originate in the nucleus but rather in the electron orbitals; \nhowever, X-rays are the result of interactions between radiation from the nucleus and \nthe orbital electrons. Nuclear medicine imaging is accomplished through detection and",
+        "transition may be either a stable nuclide or a different radionuclide. Typically, these \ntransitions are accompanied by the emission of radiation from the nucleus, which is \nbroadly classified as either particulate or nonparticulate. Some radionuclides emit \nmultiple types of radiation in this process, whereas others emit only a single type. The \nmain types of particulate radiation commonly seen in nuclear medicine are alpha, beta,",
+        "The purpose of this chapter is to provide information regarding radioactivity\u2014 including \ndefinitions, types of decay, and general considerations relating to radioactive decay, \ncounting, radionuclide production, purity, and labeling\u2014as well as instrumentation for \ndetection and measurement of radioactive emissions. \n Specific information on standards for radionuclide identification and assay, including \ninstrument qualification, performance checks, identification of radionuclides and"
+      ],
+      "response": "Gamma rays and X-rays.",
+      "user_input": "What nonparticulate radiation types are named in the chapter?",
+      "reference": "The nonparticulate radiation types named are gamma rays and X-rays.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.501741363813493,
+      "context_precision": 0.99999999995,
+      "context_recall": 1.0
+    },
+    {
+      "id": "rad-10",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "According to the chapter, how is nuclear medicine imaging accomplished?",
+      "ground_truth": "Nuclear medicine imaging is accomplished through detection and localization of nonparticulate radiation.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "According to the chapter, how is nuclear medicine imaging accomplished?",
+        "How does the chapter explain how nuclear medicine imaging is performed?",
+        "According to the chapter, by what methods is nuclear medicine imaging carried out?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "the orbital electrons. Nuclear medicine imaging is accomplished through detection and",
+        "main types of particulate radiation commonly seen in nuclear medicine are alpha, beta,",
+        "samarium-"
+      ],
+      "retrieved_contexts": [
+        "the orbital electrons. Nuclear medicine imaging is accomplished through detection and \nlocalization of nonparticulate radiation, whereas therapeutic effects arise from the \nenergy deposited in the target organ by particulate radiation. \n2.1 Alpha Decay \nAlpha decay is radioactive decay with the emission of alpha particles, or helium nuclei, \nand is generally limited to elements with an atomic number >83. In some cases, beta",
+        "main types of particulate radiation commonly seen in nuclear medicine are alpha, beta, \nand positron. Nonparticulate types of radiation include gamma rays and X-rays. Strictly \nspeaking, X-rays do not originate in the nucleus but rather in the electron orbitals; \nhowever, X-rays are the result of interactions between radiation from the nucleus and \nthe orbital electrons. Nuclear medicine imaging is accomplished through detection and",
+        "samarium-\n153, \nThallium-201, \niodine-123, \ngallium-67, \nindium-111, \nfluorine-18, \nTechnetium-\n99m, krypton-\n81m \ngallium-68, \nrubidium-82 \nProduction Method \nNuclear \nReactor \n(fission by-\nproduct) \nNuclear \nReactor \n(neutron \nactivation) Cyclotron \nRadionuclide \nGenerator \nlutetium-177 carbon-11 \n Other methods of radionuclide production have been developed but currently are not \nused to produce radionuclides used in radiopharmaceuticals. \n3.12 Carrier"
+      ],
+      "response": "By detection and localization of nonparticulate radiation (for example, gamma rays and X\u2011rays).",
+      "user_input": "According to the chapter, how is nuclear medicine imaging accomplished?",
+      "reference": "Nuclear medicine imaging is accomplished through detection and localization of nonparticulate radiation.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.3963060403443642,
+      "context_precision": 0.99999999995,
+      "context_recall": 1.0
+    },
+    {
+      "id": "rad-11",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "According to the chapter, what produces therapeutic effects in nuclear medicine?",
+      "ground_truth": "Therapeutic effects arise from the energy deposited in the target organ by particulate radiation.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "According to the chapter, what produces therapeutic effects in nuclear medicine?",
+        "According to the chapter, what is responsible for producing therapeutic effects in nuclear medicine?",
+        "What produces therapeutic effects in nuclear medicine, according to the chapter?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "the orbital electrons. Nuclear medicine imaging is accomplished through detection and",
+        "their beta emissions, however, several of these radionuclides have been used in",
+        "activity of certain radionuclides, and the limited selection of radionuclides produced."
+      ],
+      "retrieved_contexts": [
+        "the orbital electrons. Nuclear medicine imaging is accomplished through detection and \nlocalization of nonparticulate radiation, whereas therapeutic effects arise from the \nenergy deposited in the target organ by particulate radiation. \n2.1 Alpha Decay \nAlpha decay is radioactive decay with the emission of alpha particles, or helium nuclei, \nand is generally limited to elements with an atomic number >83. In some cases, beta",
+        "their beta emissions, however, several of these radionuclides have been used in \ntherapeutic radiopharmaceuticals. Examples of neutron-activated radionuclides used in \ntherapeutic radiopharmaceuticals include strontium-89, yttrium-90, iodine-131, \nsamarium-153, and lutetium-177. \n Cyclotron production of radionuclides occurs by bombarding stable atoms with \ncharged particles (e.g., protons or deuterons) that have been accelerated in the",
+        "activity of certain radionuclides, and the limited selection of radionuclides produced. \nExamples of fission by-products used in nuclear medicine applications include iodine-\n131 and xenon-133. Currently, the most widely used fission by-product is molybdenum-\n99, which is used in technetium-99m generators. \n Neutron activation refers to the production of radionuclides in a nuclear reactor by \nbombarding target atoms with thermal neutrons. Nuclear transformations, induced by"
+      ],
+      "response": "Therapeutic effects arise from the energy deposited in the target organ by particulate radiation (e.g., alpha and beta particles).",
+      "user_input": "According to the chapter, what produces therapeutic effects in nuclear medicine?",
+      "reference": "Therapeutic effects arise from the energy deposited in the target organ by particulate radiation.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.6526880539007923,
+      "context_precision": 0.99999999995,
+      "context_recall": 1.0
+    },
+    {
+      "id": "rad-12",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "What is alpha decay?",
+      "ground_truth": "Alpha decay is radioactive decay with the emission of alpha particles, or helium nuclei.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "What is alpha decay?",
+        "Can you explain what alpha decay is?",
+        "How does alpha decay work?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "the orbital electrons. Nuclear medicine imaging is accomplished through detection and",
+        "and is generally limited to elements with an atomic number >83. In some cases, beta",
+        "typically occurs in neutron-excessive radionuclides wherein a neutron is transformed"
+      ],
+      "retrieved_contexts": [
+        "the orbital electrons. Nuclear medicine imaging is accomplished through detection and \nlocalization of nonparticulate radiation, whereas therapeutic effects arise from the \nenergy deposited in the target organ by particulate radiation. \n2.1 Alpha Decay \nAlpha decay is radioactive decay with the emission of alpha particles, or helium nuclei, \nand is generally limited to elements with an atomic number >83. In some cases, beta",
+        "and is generally limited to elements with an atomic number >83. In some cases, beta \nparticles and gamma rays may also be emitted during alpha decay. An example of a \nradionuclide that decays by alpha decay is: \nRadium-226 \u2192 Radon-222 \n2.2 Beta Decay \nBeta decay is radioactive decay with the emission of an electron. This type of decay \ntypically occurs in neutron-excessive radionuclides wherein a neutron is transformed",
+        "typically occurs in neutron-excessive radionuclides wherein a neutron is transformed \ninto a proton. In some cases, the emission of a positively charged electron, or positron, \nmay occur. This type of decay typically occurs in neutron-deficient radionuclides with a \nlower atomic number wherein a proton is transformed into a neutron. In some cases, \ngamma rays may also be emitted during beta decay. An example of beta decay through \nemission of an electron is: \nIodine-131 \u2192 Xenon-131"
+      ],
+      "response": "Alpha decay is radioactive decay in which an atom emits an alpha particle (a helium nucleus). It generally occurs in heavy elements (atomic number >83) and can be accompanied by beta particles or gamma rays; for example, Radium-226 \u2192 Radon-222.",
+      "user_input": "What is alpha decay?",
+      "reference": "Alpha decay is radioactive decay with the emission of alpha particles, or helium nuclei.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.9999999999999991,
+      "context_precision": 0.99999999995,
+      "context_recall": 1.0
+    },
+    {
+      "id": "rad-13",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "Alpha decay is generally limited to elements above what atomic number?",
+      "ground_truth": "Alpha decay is generally limited to elements with an atomic number greater than 83.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "Alpha decay is generally limited to elements above what atomic number?",
+        "Above which atomic number do elements typically exhibit alpha decay?",
+        "Alpha decay generally occurs in elements with atomic numbers greater than what value?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "the orbital electrons. Nuclear medicine imaging is accomplished through detection and",
+        "and is generally limited to elements with an atomic number >83. In some cases, beta",
+        "nuclear medicine applications, including very long half-lives (e.g., thousands or millions"
+      ],
+      "retrieved_contexts": [
+        "the orbital electrons. Nuclear medicine imaging is accomplished through detection and \nlocalization of nonparticulate radiation, whereas therapeutic effects arise from the \nenergy deposited in the target organ by particulate radiation. \n2.1 Alpha Decay \nAlpha decay is radioactive decay with the emission of alpha particles, or helium nuclei, \nand is generally limited to elements with an atomic number >83. In some cases, beta",
+        "and is generally limited to elements with an atomic number >83. In some cases, beta \nparticles and gamma rays may also be emitted during alpha decay. An example of a \nradionuclide that decays by alpha decay is: \nRadium-226 \u2192 Radon-222 \n2.2 Beta Decay \nBeta decay is radioactive decay with the emission of an electron. This type of decay \ntypically occurs in neutron-excessive radionuclides wherein a neutron is transformed",
+        "nuclear medicine applications, including very long half-lives (e.g., thousands or millions \nof years), decay with emissions of alpha or beta particles, and low isotopic purity \nbecause of the presence of other isotopes of that element. Because of these properties, \nnaturally occurring radionuclides are rarely used for radiopharmaceuticals, except for \nsome alpha-emitting members of the actinide decay series, which are used for certain \ntherapeutic radiopharmaceuticals, e.g., radium-223."
+      ],
+      "response": "Alpha decay is generally limited to elements with atomic number >83 (i.e., above 83).",
+      "user_input": "Alpha decay is generally limited to elements above what atomic number?",
+      "reference": "Alpha decay is generally limited to elements with an atomic number greater than 83.",
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.7352551226193271,
+      "context_precision": 0.9999999999666667,
+      "context_recall": 0.4444444444444444
+    },
+    {
+      "id": "rad-14",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "What radionuclide example is given for alpha decay?",
+      "ground_truth": "The chapter gives Radium-226 to Radon-222 as an example of alpha decay.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "What radionuclide example is given for alpha decay?",
+        "Which radionuclide is used as an example of alpha decay?",
+        "Which radioisotope is cited as an example of alpha decay?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "and is generally limited to elements with an atomic number >83. In some cases, beta",
+        "the orbital electrons. Nuclear medicine imaging is accomplished through detection and",
+        "nuclear medicine applications, including very long half-lives (e.g., thousands or millions"
+      ],
+      "retrieved_contexts": [
+        "and is generally limited to elements with an atomic number >83. In some cases, beta \nparticles and gamma rays may also be emitted during alpha decay. An example of a \nradionuclide that decays by alpha decay is: \nRadium-226 \u2192 Radon-222 \n2.2 Beta Decay \nBeta decay is radioactive decay with the emission of an electron. This type of decay \ntypically occurs in neutron-excessive radionuclides wherein a neutron is transformed",
+        "the orbital electrons. Nuclear medicine imaging is accomplished through detection and \nlocalization of nonparticulate radiation, whereas therapeutic effects arise from the \nenergy deposited in the target organ by particulate radiation. \n2.1 Alpha Decay \nAlpha decay is radioactive decay with the emission of alpha particles, or helium nuclei, \nand is generally limited to elements with an atomic number >83. In some cases, beta",
+        "nuclear medicine applications, including very long half-lives (e.g., thousands or millions \nof years), decay with emissions of alpha or beta particles, and low isotopic purity \nbecause of the presence of other isotopes of that element. Because of these properties, \nnaturally occurring radionuclides are rarely used for radiopharmaceuticals, except for \nsome alpha-emitting members of the actinide decay series, which are used for certain \ntherapeutic radiopharmaceuticals, e.g., radium-223."
+      ],
+      "response": "Radium-226 (which decays to Radon-222).",
+      "user_input": "What radionuclide example is given for alpha decay?",
+      "reference": "The chapter gives Radium-226 to Radon-222 as an example of alpha decay.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.5226990278735005,
+      "context_precision": 0.9999999999,
+      "context_recall": 1.0
+    },
+    {
+      "id": "rad-15",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "What is beta decay according to the chapter?",
+      "ground_truth": "Beta decay is radioactive decay with the emission of an electron.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "What is beta decay according to the chapter?",
+        "According to the chapter, what is beta decay?",
+        "How is beta decay defined or described in the chapter?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "and is generally limited to elements with an atomic number >83. In some cases, beta",
+        "typically occurs in neutron-excessive radionuclides wherein a neutron is transformed",
+        "emission of an electron is:"
+      ],
+      "retrieved_contexts": [
+        "and is generally limited to elements with an atomic number >83. In some cases, beta \nparticles and gamma rays may also be emitted during alpha decay. An example of a \nradionuclide that decays by alpha decay is: \nRadium-226 \u2192 Radon-222 \n2.2 Beta Decay \nBeta decay is radioactive decay with the emission of an electron. This type of decay \ntypically occurs in neutron-excessive radionuclides wherein a neutron is transformed",
+        "typically occurs in neutron-excessive radionuclides wherein a neutron is transformed \ninto a proton. In some cases, the emission of a positively charged electron, or positron, \nmay occur. This type of decay typically occurs in neutron-deficient radionuclides with a \nlower atomic number wherein a proton is transformed into a neutron. In some cases, \ngamma rays may also be emitted during beta decay. An example of beta decay through \nemission of an electron is: \nIodine-131 \u2192 Xenon-131",
+        "emission of an electron is: \nIodine-131 \u2192 Xenon-131 \n An example of beta decay through emission of a positron (\u03b2+) is: \nFluorine-18 \u2192 Oxygen-18 \nBecause a positron is an anti-electron, when it interacts with an electron, the two \nparticles annihilate, and their combined mass is transformed into energy in the form of \ntwo 511\u2009kiloelectronvolt (keV) gamma rays. These gamma rays are produced \nsimultaneously and travel away from the point of interaction in nearly opposite"
+      ],
+      "response": "Beta decay is radioactive decay with the emission of a beta particle. In \u03b2\u2212 decay an electron is emitted when a neutron is transformed into a proton (occurs in neutron\u2011excess radionuclides) \u2014 example: Iodine\u2011131 \u2192 Xenon\u2011131. In \u03b2+ decay a positron is emitted when a proton is transformed into a neutron (occurs in neutron\u2011deficient radionuclides) \u2014 example: Fluorine\u201118 \u2192 Oxygen\u201118; the positron can annihilate with an electron, producing two simultaneous 511 keV gamma rays that travel nearly opposite each other. Gamma rays may also be emitted during beta decay.",
+      "user_input": "What is beta decay according to the chapter?",
+      "reference": "Beta decay is radioactive decay with the emission of an electron.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.6604438253979502,
+      "context_precision": 0.9999999999666667,
+      "context_recall": 1.0
+    },
+    {
+      "id": "rad-16",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "In what kind of radionuclides does electron-emission beta decay typically occur?",
+      "ground_truth": "It typically occurs in neutron-excessive radionuclides, where a neutron is transformed into a proton.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "In what kind of radionuclides does electron-emission beta decay typically occur?",
+        "Which radionuclides typically undergo beta decay by electron emission?",
+        "What types of radioactive isotopes commonly exhibit electron-emission (\u03b2\u2212) beta decay?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "typically occurs in neutron-excessive radionuclides wherein a neutron is transformed",
+        "and is generally limited to elements with an atomic number >83. In some cases, beta",
+        "emission of an electron is:"
+      ],
+      "retrieved_contexts": [
+        "typically occurs in neutron-excessive radionuclides wherein a neutron is transformed \ninto a proton. In some cases, the emission of a positively charged electron, or positron, \nmay occur. This type of decay typically occurs in neutron-deficient radionuclides with a \nlower atomic number wherein a proton is transformed into a neutron. In some cases, \ngamma rays may also be emitted during beta decay. An example of beta decay through \nemission of an electron is: \nIodine-131 \u2192 Xenon-131",
+        "and is generally limited to elements with an atomic number >83. In some cases, beta \nparticles and gamma rays may also be emitted during alpha decay. An example of a \nradionuclide that decays by alpha decay is: \nRadium-226 \u2192 Radon-222 \n2.2 Beta Decay \nBeta decay is radioactive decay with the emission of an electron. This type of decay \ntypically occurs in neutron-excessive radionuclides wherein a neutron is transformed",
+        "emission of an electron is: \nIodine-131 \u2192 Xenon-131 \n An example of beta decay through emission of a positron (\u03b2+) is: \nFluorine-18 \u2192 Oxygen-18 \nBecause a positron is an anti-electron, when it interacts with an electron, the two \nparticles annihilate, and their combined mass is transformed into energy in the form of \ntwo 511\u2009kiloelectronvolt (keV) gamma rays. These gamma rays are produced \nsimultaneously and travel away from the point of interaction in nearly opposite"
+      ],
+      "response": "In neutron-excessive (neutron-rich) radionuclides, where a neutron is transformed into a proton.",
+      "user_input": "In what kind of radionuclides does electron-emission beta decay typically occur?",
+      "reference": "It typically occurs in neutron-excessive radionuclides, where a neutron is transformed into a proton.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.48200315201886773,
+      "context_precision": 0.99999999995,
+      "context_recall": 1.0
+    },
+    {
+      "id": "rad-17",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "When does positron emission typically occur according to the chapter?",
+      "ground_truth": "Positron emission typically occurs in neutron-deficient radionuclides with a lower atomic number, where a proton is transformed into a neutron.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "When does positron emission typically occur according to the chapter?",
+        "At what point in the chapter does positron emission usually occur?",
+        "According to the chapter, when is positron emission most likely to take place?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "typically occurs in neutron-excessive radionuclides wherein a neutron is transformed",
+        "simultaneously and travel away from the point of interaction in nearly opposite",
+        "emission of an electron is:"
+      ],
+      "retrieved_contexts": [
+        "typically occurs in neutron-excessive radionuclides wherein a neutron is transformed \ninto a proton. In some cases, the emission of a positively charged electron, or positron, \nmay occur. This type of decay typically occurs in neutron-deficient radionuclides with a \nlower atomic number wherein a proton is transformed into a neutron. In some cases, \ngamma rays may also be emitted during beta decay. An example of beta decay through \nemission of an electron is: \nIodine-131 \u2192 Xenon-131",
+        "simultaneously and travel away from the point of interaction in nearly opposite \ndirections. These two characteristics form the basis for positron emission tomography \n(PET) imaging techniques. \n2.3 Electron Capture Decay \nElectron capture is radioactive decay that involves nuclear capture of an inner orbital \nelectron, nuclear transformation of a proton into a neutron, and emission of one or more \ngamma rays. Electron capture generally occurs in higher atomic number radionuclides",
+        "emission of an electron is: \nIodine-131 \u2192 Xenon-131 \n An example of beta decay through emission of a positron (\u03b2+) is: \nFluorine-18 \u2192 Oxygen-18 \nBecause a positron is an anti-electron, when it interacts with an electron, the two \nparticles annihilate, and their combined mass is transformed into energy in the form of \ntwo 511\u2009kiloelectronvolt (keV) gamma rays. These gamma rays are produced \nsimultaneously and travel away from the point of interaction in nearly opposite"
+      ],
+      "response": "Positron emission typically occurs in neutron-deficient radionuclides with a lower atomic number, where a proton is transformed into a neutron.",
+      "user_input": "When does positron emission typically occur according to the chapter?",
+      "reference": "Positron emission typically occurs in neutron-deficient radionuclides with a lower atomic number, where a proton is transformed into a neutron.",
+      "faithfulness": 0.6666666666666666,
+      "answer_relevancy": 0.7314636350072679,
+      "context_precision": 0.9999999999,
+      "context_recall": 1.0
+    },
+    {
+      "id": "rad-18",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "What example is given for beta decay through electron emission?",
+      "ground_truth": "The example given is Iodine-131 to Xenon-131.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "What example is given for beta decay through electron emission?",
+        "Which example illustrates beta decay by electron emission?",
+        "What example is provided for beta-minus decay that emits an electron?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "emission of an electron is:",
+        "typically occurs in neutron-excessive radionuclides wherein a neutron is transformed",
+        "and is generally limited to elements with an atomic number >83. In some cases, beta"
+      ],
+      "retrieved_contexts": [
+        "emission of an electron is: \nIodine-131 \u2192 Xenon-131 \n An example of beta decay through emission of a positron (\u03b2+) is: \nFluorine-18 \u2192 Oxygen-18 \nBecause a positron is an anti-electron, when it interacts with an electron, the two \nparticles annihilate, and their combined mass is transformed into energy in the form of \ntwo 511\u2009kiloelectronvolt (keV) gamma rays. These gamma rays are produced \nsimultaneously and travel away from the point of interaction in nearly opposite",
+        "typically occurs in neutron-excessive radionuclides wherein a neutron is transformed \ninto a proton. In some cases, the emission of a positively charged electron, or positron, \nmay occur. This type of decay typically occurs in neutron-deficient radionuclides with a \nlower atomic number wherein a proton is transformed into a neutron. In some cases, \ngamma rays may also be emitted during beta decay. An example of beta decay through \nemission of an electron is: \nIodine-131 \u2192 Xenon-131",
+        "and is generally limited to elements with an atomic number >83. In some cases, beta \nparticles and gamma rays may also be emitted during alpha decay. An example of a \nradionuclide that decays by alpha decay is: \nRadium-226 \u2192 Radon-222 \n2.2 Beta Decay \nBeta decay is radioactive decay with the emission of an electron. This type of decay \ntypically occurs in neutron-excessive radionuclides wherein a neutron is transformed"
+      ],
+      "response": "Iodine-131 \u2192 Xenon-131",
+      "user_input": "What example is given for beta decay through electron emission?",
+      "reference": "The example given is Iodine-131 to Xenon-131.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.4340866239602249,
+      "context_precision": 0.99999999995,
+      "context_recall": 1.0
+    },
+    {
+      "id": "rad-19",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "What example is given for beta decay through positron emission?",
+      "ground_truth": "The example given is Fluorine-18 to Oxygen-18.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "What example is given for beta decay through positron emission?",
+        "Can you give an example of beta decay that occurs through positron emission?",
+        "Which example is provided for beta-plus (positron) emission in beta decay?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "emission of an electron is:",
+        "typically occurs in neutron-excessive radionuclides wherein a neutron is transformed",
+        "and is generally limited to elements with an atomic number >83. In some cases, beta"
+      ],
+      "retrieved_contexts": [
+        "emission of an electron is: \nIodine-131 \u2192 Xenon-131 \n An example of beta decay through emission of a positron (\u03b2+) is: \nFluorine-18 \u2192 Oxygen-18 \nBecause a positron is an anti-electron, when it interacts with an electron, the two \nparticles annihilate, and their combined mass is transformed into energy in the form of \ntwo 511\u2009kiloelectronvolt (keV) gamma rays. These gamma rays are produced \nsimultaneously and travel away from the point of interaction in nearly opposite",
+        "typically occurs in neutron-excessive radionuclides wherein a neutron is transformed \ninto a proton. In some cases, the emission of a positively charged electron, or positron, \nmay occur. This type of decay typically occurs in neutron-deficient radionuclides with a \nlower atomic number wherein a proton is transformed into a neutron. In some cases, \ngamma rays may also be emitted during beta decay. An example of beta decay through \nemission of an electron is: \nIodine-131 \u2192 Xenon-131",
+        "and is generally limited to elements with an atomic number >83. In some cases, beta \nparticles and gamma rays may also be emitted during alpha decay. An example of a \nradionuclide that decays by alpha decay is: \nRadium-226 \u2192 Radon-222 \n2.2 Beta Decay \nBeta decay is radioactive decay with the emission of an electron. This type of decay \ntypically occurs in neutron-excessive radionuclides wherein a neutron is transformed"
+      ],
+      "response": "Fluorine-18 \u2192 Oxygen-18 (\u03b2+ decay).",
+      "user_input": "What example is given for beta decay through positron emission?",
+      "reference": "The example given is Fluorine-18 to Oxygen-18.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.4865282028101093,
+      "context_precision": 0.9999999999,
+      "context_recall": 1.0
+    },
+    {
+      "id": "rad-20",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "What happens when a positron interacts with an electron?",
+      "ground_truth": "They annihilate and their combined mass is transformed into energy in the form of two 511 keV gamma rays.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "What happens when a positron interacts with an electron?",
+        "What occurs when a positron collides with an electron?",
+        "What is the outcome of an interaction between a positron and an electron?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "emission of an electron is:",
+        "simultaneously and travel away from the point of interaction in nearly opposite",
+        "typically occurs in neutron-excessive radionuclides wherein a neutron is transformed"
+      ],
+      "retrieved_contexts": [
+        "emission of an electron is: \nIodine-131 \u2192 Xenon-131 \n An example of beta decay through emission of a positron (\u03b2+) is: \nFluorine-18 \u2192 Oxygen-18 \nBecause a positron is an anti-electron, when it interacts with an electron, the two \nparticles annihilate, and their combined mass is transformed into energy in the form of \ntwo 511\u2009kiloelectronvolt (keV) gamma rays. These gamma rays are produced \nsimultaneously and travel away from the point of interaction in nearly opposite",
+        "simultaneously and travel away from the point of interaction in nearly opposite \ndirections. These two characteristics form the basis for positron emission tomography \n(PET) imaging techniques. \n2.3 Electron Capture Decay \nElectron capture is radioactive decay that involves nuclear capture of an inner orbital \nelectron, nuclear transformation of a proton into a neutron, and emission of one or more \ngamma rays. Electron capture generally occurs in higher atomic number radionuclides",
+        "typically occurs in neutron-excessive radionuclides wherein a neutron is transformed \ninto a proton. In some cases, the emission of a positively charged electron, or positron, \nmay occur. This type of decay typically occurs in neutron-deficient radionuclides with a \nlower atomic number wherein a proton is transformed into a neutron. In some cases, \ngamma rays may also be emitted during beta decay. An example of beta decay through \nemission of an electron is: \nIodine-131 \u2192 Xenon-131"
+      ],
+      "response": "They annihilate: the positron and electron destroy each other, converting their mass to energy released as two 511 keV gamma rays emitted simultaneously in nearly opposite directions (principle used in PET imaging).",
+      "user_input": "What happens when a positron interacts with an electron?",
+      "reference": "They annihilate and their combined mass is transformed into energy in the form of two 511 keV gamma rays.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.6241669017026056,
+      "context_precision": 0.9999999999,
+      "context_recall": 1.0
+    },
+    {
+      "id": "rad-21",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "Which two characteristics of annihilation gamma rays form the basis of PET imaging?",
+      "ground_truth": "They are produced simultaneously and travel away from the interaction point in nearly opposite directions.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "Which two characteristics of annihilation gamma rays form the basis of PET imaging?",
+        "What two properties of positron-annihilation gamma photons are exploited in PET imaging?",
+        "Which pair of features of annihilation-produced gamma rays underlie PET image formation?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "simultaneously and travel away from the point of interaction in nearly opposite",
+        "Gamma-ray spectra exhibit one or more sharp, characteristic photopeaks, or full-",
+        "emission of an electron is:"
+      ],
+      "retrieved_contexts": [
+        "simultaneously and travel away from the point of interaction in nearly opposite \ndirections. These two characteristics form the basis for positron emission tomography \n(PET) imaging techniques. \n2.3 Electron Capture Decay \nElectron capture is radioactive decay that involves nuclear capture of an inner orbital \nelectron, nuclear transformation of a proton into a neutron, and emission of one or more \ngamma rays. Electron capture generally occurs in higher atomic number radionuclides",
+        "Gamma-ray spectra exhibit one or more sharp, characteristic photopeaks, or full-\nenergy peaks, as a result of total absorption in the detector of the full energy of incident \ngamma radiations. These photopeaks are useful for identification purposes. Other \nsecondary peaks are observed as a consequence of backscatter, annihilation radiation, \ncoincidence summing, fluorescent X-rays, and other factors, accompanied by a broad",
+        "emission of an electron is: \nIodine-131 \u2192 Xenon-131 \n An example of beta decay through emission of a positron (\u03b2+) is: \nFluorine-18 \u2192 Oxygen-18 \nBecause a positron is an anti-electron, when it interacts with an electron, the two \nparticles annihilate, and their combined mass is transformed into energy in the form of \ntwo 511\u2009kiloelectronvolt (keV) gamma rays. These gamma rays are produced \nsimultaneously and travel away from the point of interaction in nearly opposite"
+      ],
+      "response": "They are produced simultaneously and are emitted in nearly opposite (\u2248180\u00b0) directions.",
+      "user_input": "Which two characteristics of annihilation gamma rays form the basis of PET imaging?",
+      "reference": "They are produced simultaneously and travel away from the interaction point in nearly opposite directions.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.2791404606325413,
+      "context_precision": 0.8333333332916666,
+      "context_recall": 1.0
+    },
+    {
+      "id": "rad-22",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "What is electron capture decay?",
+      "ground_truth": "Electron capture is radioactive decay involving nuclear capture of an inner orbital electron, transformation of a proton into a neutron, and emission of one or more gamma rays.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "What is electron capture decay?",
+        "Can you explain electron capture decay?",
+        "How does electron capture decay work?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "simultaneously and travel away from the point of interaction in nearly opposite",
+        "gamma rays. Electron capture generally occurs in higher atomic number radionuclides",
+        "typically occurs in neutron-excessive radionuclides wherein a neutron is transformed"
+      ],
+      "retrieved_contexts": [
+        "simultaneously and travel away from the point of interaction in nearly opposite \ndirections. These two characteristics form the basis for positron emission tomography \n(PET) imaging techniques. \n2.3 Electron Capture Decay \nElectron capture is radioactive decay that involves nuclear capture of an inner orbital \nelectron, nuclear transformation of a proton into a neutron, and emission of one or more \ngamma rays. Electron capture generally occurs in higher atomic number radionuclides",
+        "gamma rays. Electron capture generally occurs in higher atomic number radionuclides \nthat are neutron deficient. An example of a radionuclide that decays by electron capture \ndecay is: \nIodine-123 \u2192 Tellurium-123 \n2.4 Isomeric Transition \nAn isomeric transition is radioactive decay that involves a transition between nuclear \nisomers with the emission of one or more gamma rays. In contrast to other types of \ndecay, the number of protons and neutrons remains the same in an isomeric transition.",
+        "typically occurs in neutron-excessive radionuclides wherein a neutron is transformed \ninto a proton. In some cases, the emission of a positively charged electron, or positron, \nmay occur. This type of decay typically occurs in neutron-deficient radionuclides with a \nlower atomic number wherein a proton is transformed into a neutron. In some cases, \ngamma rays may also be emitted during beta decay. An example of beta decay through \nemission of an electron is: \nIodine-131 \u2192 Xenon-131"
+      ],
+      "response": "Electron capture is a radioactive decay in which an inner orbital electron is captured by the nucleus, a proton is converted into a neutron, and one or more gamma rays are emitted. It generally occurs in higher\u2013atomic-number, neutron\u2011deficient radionuclides (example: Iodine\u2011123 \u2192 Tellurium\u2011123).",
+      "user_input": "What is electron capture decay?",
+      "reference": "Electron capture is radioactive decay involving nuclear capture of an inner orbital electron, transformation of a proton into a neutron, and emission of one or more gamma rays.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.7777102754308115,
+      "context_precision": 0.9999999999,
+      "context_recall": 0.2727272727272727
+    },
+    {
+      "id": "rad-23",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "In what kind of radionuclides does electron capture generally occur?",
+      "ground_truth": "Electron capture generally occurs in higher atomic number radionuclides that are neutron deficient.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "In what kind of radionuclides does electron capture generally occur?",
+        "Which radionuclides typically undergo electron capture?",
+        "In what types of radioactive isotopes is electron capture commonly observed?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "gamma rays. Electron capture generally occurs in higher atomic number radionuclides",
+        "simultaneously and travel away from the point of interaction in nearly opposite",
+        "and is generally limited to elements with an atomic number >83. In some cases, beta"
+      ],
+      "retrieved_contexts": [
+        "gamma rays. Electron capture generally occurs in higher atomic number radionuclides \nthat are neutron deficient. An example of a radionuclide that decays by electron capture \ndecay is: \nIodine-123 \u2192 Tellurium-123 \n2.4 Isomeric Transition \nAn isomeric transition is radioactive decay that involves a transition between nuclear \nisomers with the emission of one or more gamma rays. In contrast to other types of \ndecay, the number of protons and neutrons remains the same in an isomeric transition.",
+        "simultaneously and travel away from the point of interaction in nearly opposite \ndirections. These two characteristics form the basis for positron emission tomography \n(PET) imaging techniques. \n2.3 Electron Capture Decay \nElectron capture is radioactive decay that involves nuclear capture of an inner orbital \nelectron, nuclear transformation of a proton into a neutron, and emission of one or more \ngamma rays. Electron capture generally occurs in higher atomic number radionuclides",
+        "and is generally limited to elements with an atomic number >83. In some cases, beta \nparticles and gamma rays may also be emitted during alpha decay. An example of a \nradionuclide that decays by alpha decay is: \nRadium-226 \u2192 Radon-222 \n2.2 Beta Decay \nBeta decay is radioactive decay with the emission of an electron. This type of decay \ntypically occurs in neutron-excessive radionuclides wherein a neutron is transformed"
+      ],
+      "response": "Electron capture generally occurs in higher\u2013atomic\u2011number radionuclides that are neutron\u2011deficient.",
+      "user_input": "In what kind of radionuclides does electron capture generally occur?",
+      "reference": "Electron capture generally occurs in higher atomic number radionuclides that are neutron deficient.",
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.9771556128582859,
+      "context_precision": 0.9999999999666667,
+      "context_recall": 1.0
+    },
+    {
+      "id": "rad-24",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "What radionuclide example is given for electron capture decay?",
+      "ground_truth": "The example given is Iodine-123 to Tellurium-123.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "What radionuclide example is given for electron capture decay?",
+        "Which radionuclide is given as an example of electron capture decay?",
+        "What isotope is provided as an example of electron-capture decay?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "gamma rays. Electron capture generally occurs in higher atomic number radionuclides",
+        "typically occurs in neutron-excessive radionuclides wherein a neutron is transformed",
+        "emission of an electron is:"
+      ],
+      "retrieved_contexts": [
+        "gamma rays. Electron capture generally occurs in higher atomic number radionuclides \nthat are neutron deficient. An example of a radionuclide that decays by electron capture \ndecay is: \nIodine-123 \u2192 Tellurium-123 \n2.4 Isomeric Transition \nAn isomeric transition is radioactive decay that involves a transition between nuclear \nisomers with the emission of one or more gamma rays. In contrast to other types of \ndecay, the number of protons and neutrons remains the same in an isomeric transition.",
+        "typically occurs in neutron-excessive radionuclides wherein a neutron is transformed \ninto a proton. In some cases, the emission of a positively charged electron, or positron, \nmay occur. This type of decay typically occurs in neutron-deficient radionuclides with a \nlower atomic number wherein a proton is transformed into a neutron. In some cases, \ngamma rays may also be emitted during beta decay. An example of beta decay through \nemission of an electron is: \nIodine-131 \u2192 Xenon-131",
+        "emission of an electron is: \nIodine-131 \u2192 Xenon-131 \n An example of beta decay through emission of a positron (\u03b2+) is: \nFluorine-18 \u2192 Oxygen-18 \nBecause a positron is an anti-electron, when it interacts with an electron, the two \nparticles annihilate, and their combined mass is transformed into energy in the form of \ntwo 511\u2009kiloelectronvolt (keV) gamma rays. These gamma rays are produced \nsimultaneously and travel away from the point of interaction in nearly opposite"
+      ],
+      "response": "Iodine-123 \u2192 Tellurium-123 (Iodine-123 decays by electron capture).",
+      "user_input": "What radionuclide example is given for electron capture decay?",
+      "reference": "The example given is Iodine-123 to Tellurium-123.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.513325073888398,
+      "context_precision": 0.9999999999,
+      "context_recall": 1.0
+    },
+    {
+      "id": "rad-25",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "What is an isomeric transition?",
+      "ground_truth": "An isomeric transition is radioactive decay involving a transition between nuclear isomers with the emission of one or more gamma rays.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "What is an isomeric transition?",
+        "What does 'isomeric transition' mean?",
+        "How would you define an isomeric transition?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "gamma rays. Electron capture generally occurs in higher atomic number radionuclides",
+        "decay, the number of protons and neutrons remains the same in an isomeric transition.",
+        "transition may be either a stable nuclide or a different radionuclide. Typically, these"
+      ],
+      "retrieved_contexts": [
+        "gamma rays. Electron capture generally occurs in higher atomic number radionuclides \nthat are neutron deficient. An example of a radionuclide that decays by electron capture \ndecay is: \nIodine-123 \u2192 Tellurium-123 \n2.4 Isomeric Transition \nAn isomeric transition is radioactive decay that involves a transition between nuclear \nisomers with the emission of one or more gamma rays. In contrast to other types of \ndecay, the number of protons and neutrons remains the same in an isomeric transition.",
+        "decay, the number of protons and neutrons remains the same in an isomeric transition. \nIsomeric transition generally occurs in radionuclides that are metastable. An example of \na radionuclide that decays by isomeric transition is: \nTechnetium-99m \u2192 Technetium-99 \n \n3. GENERAL CONSIDERATIONS \n3.1 Radioactivity \n Radioactive decay is a first-order process (i.e., a fraction of atoms decay per unit \ntime). The rate of decay for each radionuclide is a unique and constant value, which",
+        "transition may be either a stable nuclide or a different radionuclide. Typically, these \ntransitions are accompanied by the emission of radiation from the nucleus, which is \nbroadly classified as either particulate or nonparticulate. Some radionuclides emit \nmultiple types of radiation in this process, whereas others emit only a single type. The \nmain types of particulate radiation commonly seen in nuclear medicine are alpha, beta,"
+      ],
+      "response": "An isomeric transition is a radioactive decay in which a nucleus moves between nuclear isomers and emits one or more gamma rays. The numbers of protons and neutrons do not change; it typically occurs in metastable radionuclides (e.g., Technetium\u201199m \u2192 Technetium\u201199).",
+      "user_input": "What is an isomeric transition?",
+      "reference": "An isomeric transition is radioactive decay involving a transition between nuclear isomers with the emission of one or more gamma rays.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.9999999999999993,
+      "context_precision": 0.9999999999666667,
+      "context_recall": 0.4
+    },
+    {
+      "id": "rad-26",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "What remains unchanged during an isomeric transition?",
+      "ground_truth": "The number of protons and neutrons remains the same during an isomeric transition.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "What remains unchanged during an isomeric transition?",
+        "Which physical quantity remains unchanged during an isomeric transition?",
+        "What property is conserved in an isomeric transition?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "decay, the number of protons and neutrons remains the same in an isomeric transition.",
+        "gamma rays. Electron capture generally occurs in higher atomic number radionuclides",
+        "Isobars: Nuclides with the same mass number (protons + neutrons)."
+      ],
+      "retrieved_contexts": [
+        "decay, the number of protons and neutrons remains the same in an isomeric transition. \nIsomeric transition generally occurs in radionuclides that are metastable. An example of \na radionuclide that decays by isomeric transition is: \nTechnetium-99m \u2192 Technetium-99 \n \n3. GENERAL CONSIDERATIONS \n3.1 Radioactivity \n Radioactive decay is a first-order process (i.e., a fraction of atoms decay per unit \ntime). The rate of decay for each radionuclide is a unique and constant value, which",
+        "gamma rays. Electron capture generally occurs in higher atomic number radionuclides \nthat are neutron deficient. An example of a radionuclide that decays by electron capture \ndecay is: \nIodine-123 \u2192 Tellurium-123 \n2.4 Isomeric Transition \nAn isomeric transition is radioactive decay that involves a transition between nuclear \nisomers with the emission of one or more gamma rays. In contrast to other types of \ndecay, the number of protons and neutrons remains the same in an isomeric transition.",
+        "Isobars: Nuclides with the same mass number (protons + neutrons). \n Isomers: Atoms with the same number of protons and neutrons, but a different \nnuclear energy configuration. Short-lived radioactive isomers are generally referred to \nas metastable. Different isomers are different nuclides based on their nuclear energy \nconfigurations. \n Isotones: Nuclides with the same number of neutrons and a different number of \nprotons. Isotones are different elements with different atomic masses."
+      ],
+      "response": "The numbers of protons and neutrons remain unchanged \u2014 i.e., the atomic number and mass number stay the same (only the nucleus' energy state changes, emitting gamma rays).",
+      "user_input": "What remains unchanged during an isomeric transition?",
+      "reference": "The number of protons and neutrons remains the same during an isomeric transition.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.5332976248056052,
+      "context_precision": 0.9999999999666667,
+      "context_recall": 1.0
+    },
+    {
+      "id": "rad-27",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "In what kind of radionuclides does isomeric transition generally occur?",
+      "ground_truth": "It generally occurs in radionuclides that are metastable.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "In what kind of radionuclides does isomeric transition generally occur?",
+        "Which radionuclides typically undergo isomeric transition?",
+        "In which types of radioactive nuclides are isomeric transitions commonly observed?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "decay, the number of protons and neutrons remains the same in an isomeric transition.",
+        "gamma rays. Electron capture generally occurs in higher atomic number radionuclides",
+        "transition may be either a stable nuclide or a different radionuclide. Typically, these"
+      ],
+      "retrieved_contexts": [
+        "decay, the number of protons and neutrons remains the same in an isomeric transition. \nIsomeric transition generally occurs in radionuclides that are metastable. An example of \na radionuclide that decays by isomeric transition is: \nTechnetium-99m \u2192 Technetium-99 \n \n3. GENERAL CONSIDERATIONS \n3.1 Radioactivity \n Radioactive decay is a first-order process (i.e., a fraction of atoms decay per unit \ntime). The rate of decay for each radionuclide is a unique and constant value, which",
+        "gamma rays. Electron capture generally occurs in higher atomic number radionuclides \nthat are neutron deficient. An example of a radionuclide that decays by electron capture \ndecay is: \nIodine-123 \u2192 Tellurium-123 \n2.4 Isomeric Transition \nAn isomeric transition is radioactive decay that involves a transition between nuclear \nisomers with the emission of one or more gamma rays. In contrast to other types of \ndecay, the number of protons and neutrons remains the same in an isomeric transition.",
+        "transition may be either a stable nuclide or a different radionuclide. Typically, these \ntransitions are accompanied by the emission of radiation from the nucleus, which is \nbroadly classified as either particulate or nonparticulate. Some radionuclides emit \nmultiple types of radiation in this process, whereas others emit only a single type. The \nmain types of particulate radiation commonly seen in nuclear medicine are alpha, beta,"
+      ],
+      "response": "Isomeric transition generally occurs in metastable radionuclides (nuclear isomers), e.g., Technetium-99m.",
+      "user_input": "In what kind of radionuclides does isomeric transition generally occur?",
+      "reference": "It generally occurs in radionuclides that are metastable.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.8263231518421654,
+      "context_precision": 0.99999999995,
+      "context_recall": 1.0
+    },
+    {
+      "id": "rad-28",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "What radionuclide example is given for isomeric transition?",
+      "ground_truth": "The example given is Technetium-99m to Technetium-99.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "What radionuclide example is given for isomeric transition?",
+        "Which radionuclide is given as an example of an isomeric transition?",
+        "What radionuclide is cited as an example illustrating an isomeric transition?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "decay, the number of protons and neutrons remains the same in an isomeric transition.",
+        "gamma rays. Electron capture generally occurs in higher atomic number radionuclides",
+        "transition may be either a stable nuclide or a different radionuclide. Typically, these"
+      ],
+      "retrieved_contexts": [
+        "decay, the number of protons and neutrons remains the same in an isomeric transition. \nIsomeric transition generally occurs in radionuclides that are metastable. An example of \na radionuclide that decays by isomeric transition is: \nTechnetium-99m \u2192 Technetium-99 \n \n3. GENERAL CONSIDERATIONS \n3.1 Radioactivity \n Radioactive decay is a first-order process (i.e., a fraction of atoms decay per unit \ntime). The rate of decay for each radionuclide is a unique and constant value, which",
+        "gamma rays. Electron capture generally occurs in higher atomic number radionuclides \nthat are neutron deficient. An example of a radionuclide that decays by electron capture \ndecay is: \nIodine-123 \u2192 Tellurium-123 \n2.4 Isomeric Transition \nAn isomeric transition is radioactive decay that involves a transition between nuclear \nisomers with the emission of one or more gamma rays. In contrast to other types of \ndecay, the number of protons and neutrons remains the same in an isomeric transition.",
+        "transition may be either a stable nuclide or a different radionuclide. Typically, these \ntransitions are accompanied by the emission of radiation from the nucleus, which is \nbroadly classified as either particulate or nonparticulate. Some radionuclides emit \nmultiple types of radiation in this process, whereas others emit only a single type. The \nmain types of particulate radiation commonly seen in nuclear medicine are alpha, beta,"
+      ],
+      "response": "Technetium-99m \u2192 Technetium-99",
+      "user_input": "What radionuclide example is given for isomeric transition?",
+      "reference": "The example given is Technetium-99m to Technetium-99.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.5077145473832759,
+      "context_precision": 0.9999999999,
+      "context_recall": 1.0
+    },
+    {
+      "id": "rad-29",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "How does the chapter describe radioactive decay as a process in terms of order?",
+      "ground_truth": "The chapter describes radioactive decay as a first-order process, meaning a fraction of atoms decay per unit time.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "How does the chapter describe radioactive decay as a process in terms of order?",
+        "In the chapter, how is radioactive decay characterized in terms of its order?",
+        "According to the chapter, what reaction order is radioactive decay described as?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "Radioactivity\u2014Theory and Practice \u27e81821\u27e9.",
+        "The purpose of this chapter is to provide information regarding radioactivity\u2014 including",
+        "time). The rate of decay for each radionuclide is a unique and constant value, which"
+      ],
+      "retrieved_contexts": [
+        "Radioactivity\u2014Theory and Practice \u27e81821\u27e9. \n \n(CHM4: R. Ravichandran.) Correspondence Number\u2014C154279 \n \nAdd the following: \n\u25aa\u27e81821\u27e9 RADIOACTIVITY\u2014THEORY AND \nPRACTICE \n \n1. INTRODUCTION \n2. TYPES OF DECAY \n2.1 Alpha Decay \n2.2 Beta Decay \n2.3 Electron Capture Decay \n2.4 Isomeric Transition \n \n3. GENERAL CONSIDERATIONS \n3.1 Radioactivity \n3.2 Fundamental Decay Law \n3.3 Counting Efficiency \n3.4 Background \n3.5 Statistics of Counting \n3.6\u2009Minimum Detectable Activity \n3.7 Limit of Quantification",
+        "The purpose of this chapter is to provide information regarding radioactivity\u2014 including \ndefinitions, types of decay, and general considerations relating to radioactive decay, \ncounting, radionuclide production, purity, and labeling\u2014as well as instrumentation for \ndetection and measurement of radioactive emissions. \n Specific information on standards for radionuclide identification and assay, including \ninstrument qualification, performance checks, identification of radionuclides and",
+        "time). The rate of decay for each radionuclide is a unique and constant value, which \ngives rise to the term \u201cdecay constant\u201d. \n Each radionuclide\u2019s rate of decay is a unique and constant value (its decay constant) \nand can be described by the following equation: \nA = \u03bbN \nA = amount of radioactivity in a source at a given time \n\u03bb = rate of decay of the radionuclide \nN = number of radioactive atoms \nThe traditional unit for radioactivity is the Curie (Ci), which is equal to 3.7\u2009\u00d7\u20091010 atoms"
+      ],
+      "response": "The chapter describes decay as a process whose rate is proportional to the number of radioactive atoms: each radionuclide has a constant decay constant \u03bb and A = \u03bbN. This corresponds to first-order (exponential) decay.",
+      "user_input": "How does the chapter describe radioactive decay as a process in terms of order?",
+      "reference": "The chapter describes radioactive decay as a first-order process, meaning a fraction of atoms decay per unit time.",
+      "faithfulness": 0.75,
+      "answer_relevancy": 0.6754888392381616,
+      "context_precision": 0.8333333332916666,
+      "context_recall": 1.0
+    },
+    {
+      "id": "rad-30",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "What does the equation A = \u00ce\u00bbN represent?",
+      "ground_truth": "It represents the amount of radioactivity in a source at a given time as the decay constant multiplied by the number of radioactive atoms.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "What does the equation A = \u00ce\u00bbN represent?",
+        "What does the formula A = \u03bbN represent?",
+        "How should the equation A = \u03bbN be interpreted?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "time). The rate of decay for each radionuclide is a unique and constant value, which",
+        "gigabecquerel (GBq). Hence, 1 Ci = 37 GBq.",
+        "At = A0e\u2212\u03bbt"
+      ],
+      "retrieved_contexts": [
+        "time). The rate of decay for each radionuclide is a unique and constant value, which \ngives rise to the term \u201cdecay constant\u201d. \n Each radionuclide\u2019s rate of decay is a unique and constant value (its decay constant) \nand can be described by the following equation: \nA = \u03bbN \nA = amount of radioactivity in a source at a given time \n\u03bb = rate of decay of the radionuclide \nN = number of radioactive atoms \nThe traditional unit for radioactivity is the Curie (Ci), which is equal to 3.7\u2009\u00d7\u20091010 atoms",
+        "gigabecquerel (GBq). Hence, 1 Ci = 37 GBq. \n3.2 Fundamental Decay Law \n The decay of a radioactive source is described by the equation: \nNt = N0e\u2212\u03bbt \nNt = number of radioactive atoms remaining at elapsed time t \nt = time elapsed (time unit, such as s, min, or h) \nN0 = number of radioactive atoms when t = 0 \n\u03bb = decay constant of the specific radionuclide \n The above equation can be rewritten in terms of radioactivity: \nAt = A0e\u2212\u03bbt \nAt = amount of radioactivity at elapsed time (t)",
+        "At = A0e\u2212\u03bbt \nAt = amount of radioactivity at elapsed time (t) \nt = time elapsed (time unit, such as s, min, or h) \nA0 = amount of radioactivity when t = 0 \n\u03bb = decay constant of the specific radionuclide \n\u201cDecay tables\u201d that provide radionuclide-specific decay factors (i.e., fraction remaining) \ncalculated from A0e\u2212\u03bbt at various elapsed times (t) are commonly available. \n The half-life is defined as the time interval required for a quantity of radioactivity to"
+      ],
+      "response": "It expresses the activity (decay rate) A of a radioactive sample as A = \u03bbN, where \u03bb is the decay constant (probability/rate of decay per atom per unit time) and N is the number of radioactive atoms; their product gives the number of decays per unit time.",
+      "user_input": "What does the equation A = \u00ce\u00bbN represent?",
+      "reference": "It represents the amount of radioactivity in a source at a given time as the decay constant multiplied by the number of radioactive atoms.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.4268767748315355,
+      "context_precision": 0.8333333332916666,
+      "context_recall": 1.0
+    },
+    {
+      "id": "rad-31",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "What is the traditional unit for radioactivity and how is it defined?",
+      "ground_truth": "The traditional unit is the Curie, defined as 3.7 \u00c3\u2014 10^10 atoms undergoing radioactive decay, or disintegrations per second.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "What is the traditional unit for radioactivity and how is it defined?",
+        "What is the traditional unit used to measure radioactivity, and how is that unit defined?",
+        "Which unit has historically been used for radioactivity, and what is its official definition?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "The traditional unit for radioactivity is the Curie (Ci), which is equal to 3.7\u2009\u00d7\u20091010 atoms",
+        "(or disintegrations per unit time). 2) The quantity of radioactive material, as measured in",
+        "gigabecquerel (GBq). Hence, 1 Ci = 37 GBq."
+      ],
+      "retrieved_contexts": [
+        "The traditional unit for radioactivity is the Curie (Ci), which is equal to 3.7\u2009\u00d7\u20091010 atoms \nundergoing radioactive decay, or disintegrations per second (dps). Commonly used \nprefixes associated with the Ci include the millicurie (mCi) and the microcurie (\u00b5Ci). The \nSI unit for radioactivity is the Becquerel (Bq), which is equal to 1 dps. Commonly, \nprefixes associated with the Bq include the megabecquerel (MBq) and the \ngigabecquerel (GBq). Hence, 1 Ci = 37 GBq. \n3.2 Fundamental Decay Law",
+        "(or disintegrations per unit time). 2) The quantity of radioactive material, as measured in \nunits of Curies (US units) or Becquerels (SI units). The quantity of radioactive material \nmay also be referred to as activity. \n Radiochemical identity: The molecular structure of the intended active radioactive \ndrug ingredient that is present in the radiopharmaceutical preparation. \n Radiochemical purity: The ratio, expressed as a percentage, of the radioactivity of",
+        "gigabecquerel (GBq). Hence, 1 Ci = 37 GBq. \n3.2 Fundamental Decay Law \n The decay of a radioactive source is described by the equation: \nNt = N0e\u2212\u03bbt \nNt = number of radioactive atoms remaining at elapsed time t \nt = time elapsed (time unit, such as s, min, or h) \nN0 = number of radioactive atoms when t = 0 \n\u03bb = decay constant of the specific radionuclide \n The above equation can be rewritten in terms of radioactivity: \nAt = A0e\u2212\u03bbt \nAt = amount of radioactivity at elapsed time (t)"
+      ],
+      "response": "The traditional unit is the Curie (Ci), defined as 3.7 \u00d7 10^10 radioactive disintegrations per second (dps). Common prefixes include the millicurie (mCi) and microcurie (\u00b5Ci); 1 Ci = 37 GBq.",
+      "user_input": "What is the traditional unit for radioactivity and how is it defined?",
+      "reference": "The traditional unit is the Curie, defined as 3.7 \u00c3\u2014 10^10 atoms undergoing radioactive decay, or disintegrations per second.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.8867297071932843,
+      "context_precision": 0.9999999999,
+      "context_recall": 1.0
+    },
+    {
+      "id": "rad-32",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "What is the SI unit for radioactivity and how is it defined?",
+      "ground_truth": "The SI unit is the Becquerel, defined as 1 disintegration per second.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "What is the SI unit for radioactivity and how is it defined?",
+        "What is the SI unit used to measure radioactivity, and what is its definition?",
+        "Which SI unit denotes radioactivity, and how is that unit defined?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "The traditional unit for radioactivity is the Curie (Ci), which is equal to 3.7\u2009\u00d7\u20091010 atoms",
+        "Because 1 dps is defined as 1 Bq, the above equation gives radioactivity in units of Bq.",
+        "gigabecquerel (GBq). Hence, 1 Ci = 37 GBq."
+      ],
+      "retrieved_contexts": [
+        "The traditional unit for radioactivity is the Curie (Ci), which is equal to 3.7\u2009\u00d7\u20091010 atoms \nundergoing radioactive decay, or disintegrations per second (dps). Commonly used \nprefixes associated with the Ci include the millicurie (mCi) and the microcurie (\u00b5Ci). The \nSI unit for radioactivity is the Becquerel (Bq), which is equal to 1 dps. Commonly, \nprefixes associated with the Bq include the megabecquerel (MBq) and the \ngigabecquerel (GBq). Hence, 1 Ci = 37 GBq. \n3.2 Fundamental Decay Law",
+        "Because 1 dps is defined as 1 Bq, the above equation gives radioactivity in units of Bq. \nThrough the application of the appropriate unit conversion, Bq can be transformed into \n\u00b5Ci or any other unit of radioactivity. Detectors should be calibrated with a source of \nknown radioactivity and in a fixed geometry. \n3.4 Background \n Cosmic rays, radioactivity present in the detector or shielding materials, and radiation \nfrom improperly shielded sources contribute to the background radiation. All",
+        "gigabecquerel (GBq). Hence, 1 Ci = 37 GBq. \n3.2 Fundamental Decay Law \n The decay of a radioactive source is described by the equation: \nNt = N0e\u2212\u03bbt \nNt = number of radioactive atoms remaining at elapsed time t \nt = time elapsed (time unit, such as s, min, or h) \nN0 = number of radioactive atoms when t = 0 \n\u03bb = decay constant of the specific radionuclide \n The above equation can be rewritten in terms of radioactivity: \nAt = A0e\u2212\u03bbt \nAt = amount of radioactivity at elapsed time (t)"
+      ],
+      "response": "The SI unit is the Becquerel (Bq), defined as one radioactive disintegration per second (1 Bq = 1 s\u207b\u00b9). For reference, 1 Ci = 3.7 \u00d7 10\u00b9\u2070 Bq (\u2248 37 GBq).",
+      "user_input": "What is the SI unit for radioactivity and how is it defined?",
+      "reference": "The SI unit is the Becquerel, defined as 1 disintegration per second.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.890488483637054,
+      "context_precision": 0.99999999995,
+      "context_recall": 1.0
+    },
+    {
+      "id": "rad-33",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "What conversion between Curie and Becquerel is given in the chapter?",
+      "ground_truth": "The chapter states that 1 Ci equals 37 GBq.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "What conversion between Curie and Becquerel is given in the chapter?",
+        "What conversion factor between the curie and the becquerel is stated in the chapter?",
+        "According to the chapter, how do you convert curies to becquerels (or becquerels to curies)?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "The traditional unit for radioactivity is the Curie (Ci), which is equal to 3.7\u2009\u00d7\u20091010 atoms",
+        "gigabecquerel (GBq). Hence, 1 Ci = 37 GBq.",
+        "Because 1 dps is defined as 1 Bq, the above equation gives radioactivity in units of Bq."
+      ],
+      "retrieved_contexts": [
+        "The traditional unit for radioactivity is the Curie (Ci), which is equal to 3.7\u2009\u00d7\u20091010 atoms \nundergoing radioactive decay, or disintegrations per second (dps). Commonly used \nprefixes associated with the Ci include the millicurie (mCi) and the microcurie (\u00b5Ci). The \nSI unit for radioactivity is the Becquerel (Bq), which is equal to 1 dps. Commonly, \nprefixes associated with the Bq include the megabecquerel (MBq) and the \ngigabecquerel (GBq). Hence, 1 Ci = 37 GBq. \n3.2 Fundamental Decay Law",
+        "gigabecquerel (GBq). Hence, 1 Ci = 37 GBq. \n3.2 Fundamental Decay Law \n The decay of a radioactive source is described by the equation: \nNt = N0e\u2212\u03bbt \nNt = number of radioactive atoms remaining at elapsed time t \nt = time elapsed (time unit, such as s, min, or h) \nN0 = number of radioactive atoms when t = 0 \n\u03bb = decay constant of the specific radionuclide \n The above equation can be rewritten in terms of radioactivity: \nAt = A0e\u2212\u03bbt \nAt = amount of radioactivity at elapsed time (t)",
+        "Because 1 dps is defined as 1 Bq, the above equation gives radioactivity in units of Bq. \nThrough the application of the appropriate unit conversion, Bq can be transformed into \n\u00b5Ci or any other unit of radioactivity. Detectors should be calibrated with a source of \nknown radioactivity and in a fixed geometry. \n3.4 Background \n Cosmic rays, radioactivity present in the detector or shielding materials, and radiation \nfrom improperly shielded sources contribute to the background radiation. All"
+      ],
+      "response": "1 Curie (Ci) = 3.7 \u00d7 10^10 Becquerel (Bq), i.e., 1 Ci = 37 GBq.",
+      "user_input": "What conversion between Curie and Becquerel is given in the chapter?",
+      "reference": "The chapter states that 1 Ci equals 37 GBq.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.8023810711692807,
+      "context_precision": 0.99999999995,
+      "context_recall": 1.0
+    },
+    {
+      "id": "rad-34",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "What equation describes the decay of a radioactive source in terms of atoms remaining?",
+      "ground_truth": "The equation is Nt = N0e\u00e2\u02c6\u2019\u00ce\u00bbt, where Nt is the number of radioactive atoms remaining at elapsed time t.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "What equation describes the decay of a radioactive source in terms of atoms remaining?",
+        "Which equation gives the number of atoms remaining as a radioactive sample decays?",
+        "What mathematical expression describes how the number of atoms in a radioactive source decreases over time?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "gigabecquerel (GBq). Hence, 1 Ci = 37 GBq.",
+        "time). The rate of decay for each radionuclide is a unique and constant value, which",
+        "At = A0e\u2212\u03bbt"
+      ],
+      "retrieved_contexts": [
+        "gigabecquerel (GBq). Hence, 1 Ci = 37 GBq. \n3.2 Fundamental Decay Law \n The decay of a radioactive source is described by the equation: \nNt = N0e\u2212\u03bbt \nNt = number of radioactive atoms remaining at elapsed time t \nt = time elapsed (time unit, such as s, min, or h) \nN0 = number of radioactive atoms when t = 0 \n\u03bb = decay constant of the specific radionuclide \n The above equation can be rewritten in terms of radioactivity: \nAt = A0e\u2212\u03bbt \nAt = amount of radioactivity at elapsed time (t)",
+        "time). The rate of decay for each radionuclide is a unique and constant value, which \ngives rise to the term \u201cdecay constant\u201d. \n Each radionuclide\u2019s rate of decay is a unique and constant value (its decay constant) \nand can be described by the following equation: \nA = \u03bbN \nA = amount of radioactivity in a source at a given time \n\u03bb = rate of decay of the radionuclide \nN = number of radioactive atoms \nThe traditional unit for radioactivity is the Curie (Ci), which is equal to 3.7\u2009\u00d7\u20091010 atoms",
+        "At = A0e\u2212\u03bbt \nAt = amount of radioactivity at elapsed time (t) \nt = time elapsed (time unit, such as s, min, or h) \nA0 = amount of radioactivity when t = 0 \n\u03bb = decay constant of the specific radionuclide \n\u201cDecay tables\u201d that provide radionuclide-specific decay factors (i.e., fraction remaining) \ncalculated from A0e\u2212\u03bbt at various elapsed times (t) are commonly available. \n The half-life is defined as the time interval required for a quantity of radioactivity to"
+      ],
+      "response": "Nt = N0 e^(\u2212\u03bbt)\n\nWhere Nt = number of radioactive atoms remaining at elapsed time t, N0 = number of radioactive atoms at t = 0, t = elapsed time, and \u03bb = decay constant.",
+      "user_input": "What equation describes the decay of a radioactive source in terms of atoms remaining?",
+      "reference": "The equation is Nt = N0e\u00e2\u02c6\u2019\u00ce\u00bbt, where Nt is the number of radioactive atoms remaining at elapsed time t.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.7710627700509303,
+      "context_precision": 0.8333333332916666,
+      "context_recall": 1.0
+    },
+    {
+      "id": "rad-35",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "How can the fundamental decay law be rewritten in terms of radioactivity?",
+      "ground_truth": "It can be written as At = A0e\u00e2\u02c6\u2019\u00ce\u00bbt, where At is the amount of radioactivity at elapsed time t.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "How can the fundamental decay law be rewritten in terms of radioactivity?",
+        "How can the fundamental decay law be expressed in terms of radioactivity (activity)?",
+        "How is the basic decay law rewritten using radioactivity quantities, such as the activity A(t)?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "time). The rate of decay for each radionuclide is a unique and constant value, which",
+        "The half-life is defined as the time interval required for a quantity of radioactivity to",
+        "At = A0e\u2212\u03bbt"
+      ],
+      "retrieved_contexts": [
+        "time). The rate of decay for each radionuclide is a unique and constant value, which \ngives rise to the term \u201cdecay constant\u201d. \n Each radionuclide\u2019s rate of decay is a unique and constant value (its decay constant) \nand can be described by the following equation: \nA = \u03bbN \nA = amount of radioactivity in a source at a given time \n\u03bb = rate of decay of the radionuclide \nN = number of radioactive atoms \nThe traditional unit for radioactivity is the Curie (Ci), which is equal to 3.7\u2009\u00d7\u20091010 atoms",
+        "The half-life is defined as the time interval required for a quantity of radioactivity to \ndecay to one-half of its initial value and is related to the decay constant \u03bb by the \nequation: \nT1/2 = 0.69315/\u03bb \nT1/2 = half-life of the radionuclide \n\u03bb = decay constant of the specific radionuclide \n The activity of a pure radioactive substance as a function of time can be obtained from \nthe exponential equation, from decay tables, or by graphical means based on the half-\nlife (Figure 1).",
+        "At = A0e\u2212\u03bbt \nAt = amount of radioactivity at elapsed time (t) \nt = time elapsed (time unit, such as s, min, or h) \nA0 = amount of radioactivity when t = 0 \n\u03bb = decay constant of the specific radionuclide \n\u201cDecay tables\u201d that provide radionuclide-specific decay factors (i.e., fraction remaining) \ncalculated from A0e\u2212\u03bbt at various elapsed times (t) are commonly available. \n The half-life is defined as the time interval required for a quantity of radioactivity to"
+      ],
+      "response": "Start from N(t) = N0 e\u2212\u03bbt. Multiply by \u03bb (since A = \u03bbN) to get\n\nA(t) = \u03bbN(t) = \u03bbN0 e\u2212\u03bbt = A0 e\u2212\u03bbt,\n\nwith A0 = \u03bbN0. (Also T1/2 = 0.69315/\u03bb.)",
+      "user_input": "How can the fundamental decay law be rewritten in terms of radioactivity?",
+      "reference": "It can be written as At = A0e\u00e2\u02c6\u2019\u00ce\u00bbt, where At is the amount of radioactivity at elapsed time t.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.5187974649079207,
+      "context_precision": 0.5833333333041666,
+      "context_recall": 1.0
+    },
+    {
+      "id": "rad-36",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "What equation relates half-life to the decay constant?",
+      "ground_truth": "The half-life is related to the decay constant by T1/2 = 0.69315/\u00ce\u00bb.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "What equation relates half-life to the decay constant?",
+        "What is the formula that relates half-life to the decay constant?",
+        "Which equation expresses the half-life in terms of the decay constant?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "The half-life is defined as the time interval required for a quantity of radioactivity to",
+        "At = A0e\u2212\u03bbt",
+        "time). The rate of decay for each radionuclide is a unique and constant value, which"
+      ],
+      "retrieved_contexts": [
+        "The half-life is defined as the time interval required for a quantity of radioactivity to \ndecay to one-half of its initial value and is related to the decay constant \u03bb by the \nequation: \nT1/2 = 0.69315/\u03bb \nT1/2 = half-life of the radionuclide \n\u03bb = decay constant of the specific radionuclide \n The activity of a pure radioactive substance as a function of time can be obtained from \nthe exponential equation, from decay tables, or by graphical means based on the half-\nlife (Figure 1).",
+        "At = A0e\u2212\u03bbt \nAt = amount of radioactivity at elapsed time (t) \nt = time elapsed (time unit, such as s, min, or h) \nA0 = amount of radioactivity when t = 0 \n\u03bb = decay constant of the specific radionuclide \n\u201cDecay tables\u201d that provide radionuclide-specific decay factors (i.e., fraction remaining) \ncalculated from A0e\u2212\u03bbt at various elapsed times (t) are commonly available. \n The half-life is defined as the time interval required for a quantity of radioactivity to",
+        "time). The rate of decay for each radionuclide is a unique and constant value, which \ngives rise to the term \u201cdecay constant\u201d. \n Each radionuclide\u2019s rate of decay is a unique and constant value (its decay constant) \nand can be described by the following equation: \nA = \u03bbN \nA = amount of radioactivity in a source at a given time \n\u03bb = rate of decay of the radionuclide \nN = number of radioactive atoms \nThe traditional unit for radioactivity is the Curie (Ci), which is equal to 3.7\u2009\u00d7\u20091010 atoms"
+      ],
+      "response": "T1/2 = 0.69315 / \u03bb",
+      "user_input": "What equation relates half-life to the decay constant?",
+      "reference": "The half-life is related to the decay constant by T1/2 = 0.69315/\u00ce\u00bb.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.8360295179846978,
+      "context_precision": 0.99999999995,
+      "context_recall": 1.0
+    },
+    {
+      "id": "rad-37",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "What is the basic efficiency equation for detectors that count discrete decay events?",
+      "ground_truth": "The equation is disintegrations per second = (counts per second)/\u00ce\u00b5, where \u00ce\u00b5 is the efficiency or calibration factor.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "What is the basic efficiency equation for detectors that count discrete decay events?",
+        "What is the fundamental efficiency equation for detectors that count individual decay events?",
+        "What is the basic formula for the detection efficiency of a detector measuring discrete radioactive decay events?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "require calculation of a calibration factor, or efficiency, and are dependent on the type of",
+        "life (Figure 1).",
+        "converts the beta emission to light pulses, which are detected by a very sensitive"
+      ],
+      "retrieved_contexts": [
+        "require calculation of a calibration factor, or efficiency, and are dependent on the type of \ndetector, the container in which the radioactivity is placed, and the source\u2013detector \ngeometry. The basic efficiency equation for detectors designed to count discrete decay \nevents over a period of time is given as: \ndisintegrations/s = (counts/s)/\u03b5 \n\u03b5 = efficiency or calibration factor \n Because 1 dps is defined as 1 Bq, the above equation gives radioactivity in units of Bq.",
+        "life (Figure 1). \n \nFigure 1. Normalized decay chart. \n3.3 Counting Efficiency \n The validity of any radionuclide measurement is dependent upon the reproducibility of \nthe relationship between the source, the detector, and its surroundings. Appropriate \nallowances should be made for source configuration. Measurements of radioactivity \nrequire calculation of a calibration factor, or efficiency, and are dependent on the type of",
+        "converts the beta emission to light pulses, which are detected by a very sensitive \nsystem of photomultiplier tubes. At energies greater than ~100\u2009keV, the energy \nconversion and therefore the counting efficiency, is essentially 100%. The method is \nsomewhat compromised by quenching effects, but these can be easily overcome with \ncareful calibration. \n When high energy (>800\u2009keV) beta particles are measured, it is possible to count"
+      ],
+      "response": "disintegrations/s = (counts/s) / \u03b5\n\nwhere \u03b5 is the counting efficiency (calibration factor). Because 1 dps = 1 Bq, this yields activity in Bq.",
+      "user_input": "What is the basic efficiency equation for detectors that count discrete decay events?",
+      "reference": "The equation is disintegrations per second = (counts per second)/\u00ce\u00b5, where \u00ce\u00b5 is the efficiency or calibration factor.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.5940760501154172,
+      "context_precision": 0.99999999995,
+      "context_recall": 1.0
+    },
+    {
+      "id": "rad-38",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "Why should detectors be calibrated with a source of known radioactivity in a fixed geometry?",
+      "ground_truth": "Because radioactivity measurements depend on detector type, container, and source-detector geometry, so calibration with known radioactivity in fixed geometry ensures valid measurements.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "Why should detectors be calibrated with a source of known radioactivity in a fixed geometry?",
+        "Why is it important to calibrate detectors using a radioactive source of known activity placed in a fixed geometry?",
+        "What is the reason for calibrating detectors with a source of known radioactivity positioned in a fixed, reproducible geometry?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "radionuclides and the determination of radionuclidic impurities. When confirming the",
+        "The position of the radioactive sample in the dose calibrator is ideal when it simulates",
+        "radiation. The calibration of the dose calibrator for a specific radionuclide is ideally"
+      ],
+      "retrieved_contexts": [
+        "radionuclides and the determination of radionuclidic impurities. When confirming the \nidentity of a radionuclide by gamma-ray spectrometry and/or quantifying the \nradioactivity, it is necessary to ensure that the detector has been accurately calibrated \nusing a known source, as described above, and in the same geometry as the unknown \nsample. Where the radionuclides emit coincident gamma or X-radiations, the character",
+        "The position of the radioactive sample in the dose calibrator is ideal when it simulates \n4\u03c0 geometry. The geometric goal is placement of the sample at a point in the center of \nthe cylindrical detector. Reproducibility of placement within the chamber is critical, \nbecause the response typically drops off at the top and bottom of the cylinder because \nof a combination of geometry and electronic effects. The value of the ionization current",
+        "radiation. The calibration of the dose calibrator for a specific radionuclide is ideally \nperformed with a radioactive calibration source of the same radionuclide. Alternatively, it \nmay be performed by measuring radioactive calibration sources with gamma energies \nabove and below the gamma energy for the radionuclide to be measured and \ninterpolating these values, also correcting for differences in gamma abundance, to \nestablish the calibration factor for that radionuclide."
+      ],
+      "response": "Because detector response (efficiency and ionization/current signal) depends strongly on source position, geometry and the emitted radiation energies. Calibrating with a source of known activity placed in the same fixed geometry as the unknown ensures the calibration factor is correct and reproducible \u2014 the detector response can drop off near the top and bottom of a chamber and is optimized at the center (4\u03c0 geometry). Calibration is therefore ideally done with the same radionuclide (or by interpolating between known-energy standards and correcting for gamma abundance) so activity measurements and radionuclide identification are accurate; mismatched geometry or source properties will give biased results.",
+      "user_input": "Why should detectors be calibrated with a source of known radioactivity in a fixed geometry?",
+      "reference": "Because radioactivity measurements depend on detector type, container, and source-detector geometry, so calibration with known radioactivity in fixed geometry ensures valid measurements.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.8981275580761676,
+      "context_precision": 0.9999999999666667,
+      "context_recall": 1.0
+    },
+    {
+      "id": "rad-39",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "What contributes to background radiation according to the chapter?",
+      "ground_truth": "Cosmic rays, radioactivity present in the detector or shielding materials, and radiation from improperly shielded sources contribute to background radiation.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "What contributes to background radiation according to the chapter?",
+        "What sources of background radiation are listed in the chapter?",
+        "As described in the chapter, what contributes to background radiation?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "Because 1 dps is defined as 1 Bq, the above equation gives radioactivity in units of Bq.",
+        "from improperly shielded sources contribute to the background radiation. All",
+        "The purpose of this chapter is to provide information regarding radioactivity\u2014 including"
+      ],
+      "retrieved_contexts": [
+        "Because 1 dps is defined as 1 Bq, the above equation gives radioactivity in units of Bq. \nThrough the application of the appropriate unit conversion, Bq can be transformed into \n\u00b5Ci or any other unit of radioactivity. Detectors should be calibrated with a source of \nknown radioactivity and in a fixed geometry. \n3.4 Background \n Cosmic rays, radioactivity present in the detector or shielding materials, and radiation \nfrom improperly shielded sources contribute to the background radiation. All",
+        "from improperly shielded sources contribute to the background radiation. All \nThe linked image cannot be displayed. The file may have been moved, renamed, or deleted. Verify that the link points to the correct file and location.\nradioactivity measurements should be corrected by subtracting the background count \nrate from the gross count rate in the test sample. \n3.5 Statistics of Counting \n Modern radiation detection systems often incorporate statistical analysis into their",
+        "The purpose of this chapter is to provide information regarding radioactivity\u2014 including \ndefinitions, types of decay, and general considerations relating to radioactive decay, \ncounting, radionuclide production, purity, and labeling\u2014as well as instrumentation for \ndetection and measurement of radioactive emissions. \n Specific information on standards for radionuclide identification and assay, including \ninstrument qualification, performance checks, identification of radionuclides and"
+      ],
+      "response": "Cosmic rays; radioactivity present in the detector or shielding materials; and radiation from improperly shielded sources.",
+      "user_input": "What contributes to background radiation according to the chapter?",
+      "reference": "Cosmic rays, radioactivity present in the detector or shielding materials, and radiation from improperly shielded sources contribute to background radiation.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.6581671259015422,
+      "context_precision": 0.9999999999,
+      "context_recall": 1.0
+    },
+    {
+      "id": "rad-40",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "How should background be handled in radioactivity measurements?",
+      "ground_truth": "The background count rate should be subtracted from the gross count rate in the test sample.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "How should background be handled in radioactivity measurements?",
+        "What is the correct procedure for handling background in radioactivity measurements?",
+        "How should background radiation be accounted for when performing radioactivity measurements?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "Agreement of two or more of the measured parameters within 10% of the corresponding",
+        "from improperly shielded sources contribute to the background radiation. All",
+        "Because 1 dps is defined as 1 Bq, the above equation gives radioactivity in units of Bq."
+      ],
+      "retrieved_contexts": [
+        "Agreement of two or more of the measured parameters within 10% of the corresponding \npublished nuclear decay scheme data confirms the identity of the radionuclide. \n As with other types of detectors, the background should be determined and subtracted \nfrom the measurement. In addition, the background should be stable, especially in \nsituations where long counting times are required. This can be achieved by running a \nbackground spectrum before analysis and comparing it to a previously obtained",
+        "from improperly shielded sources contribute to the background radiation. All \nThe linked image cannot be displayed. The file may have been moved, renamed, or deleted. Verify that the link points to the correct file and location.\nradioactivity measurements should be corrected by subtracting the background count \nrate from the gross count rate in the test sample. \n3.5 Statistics of Counting \n Modern radiation detection systems often incorporate statistical analysis into their",
+        "Because 1 dps is defined as 1 Bq, the above equation gives radioactivity in units of Bq. \nThrough the application of the appropriate unit conversion, Bq can be transformed into \n\u00b5Ci or any other unit of radioactivity. Detectors should be calibrated with a source of \nknown radioactivity and in a fixed geometry. \n3.4 Background \n Cosmic rays, radioactivity present in the detector or shielding materials, and radiation \nfrom improperly shielded sources contribute to the background radiation. All"
+      ],
+      "response": "Determine the background and subtract it from your measurement. Specifically:\n- Measure a background spectrum (run a background count) before analysis and compare it to a previously obtained background to ensure stability.  \n- Subtract the background count rate from the gross count rate of the sample to obtain the net counts.  \n- Ensure the background is stable\u2014this is especially important for long counting times; if unstable, investigate sources (cosmic rays, radioactivity in detector or shielding materials, or improperly shielded nearby sources) and improve shielding or setup.  \n- Use a calibrated detector in a fixed geometry so background corrections and activity calculations are reliable.",
+      "user_input": "How should background be handled in radioactivity measurements?",
+      "reference": "The background count rate should be subtracted from the gross count rate in the test sample.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.5974308266663758,
+      "context_precision": 0.9999999999666667,
+      "context_recall": 1.0
+    },
+    {
+      "id": "rad-41",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "What formula does the chapter give for the standard deviation of counting statistics?",
+      "ground_truth": "The standard deviation is given as \u00cf\u0192 = \u00e2\u02c6\u0161n, where n is the number of counts accumulated in a measurement.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "What formula does the chapter give for the standard deviation of counting statistics?",
+        "What equation does the chapter give for the standard deviation of counting statistics?",
+        "Which formula does the chapter present for the standard deviation in counting statistics?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "yield only an estimate of the true counting rate. The precision of this estimate, being",
+        "many measurements is 0.68, which means that if each count were to lie within",
+        "normal distribution. Any deviations in these values from the normal distribution conform"
+      ],
+      "retrieved_contexts": [
+        "yield only an estimate of the true counting rate. The precision of this estimate, being \nsubject to statistical fluctuations, is dependent upon the number of counts accumulated \nin a given measurement and can be expressed as: \n\u03c3 = \u221an \n\u03c3 = standard deviation \nn = number of counts accumulated in a given measurement \nThe probability of a single measurement falling within \u00b1100/\u221an% of the mean of a great \nmany measurements is 0.68, which means that if each count were to lie within",
+        "many measurements is 0.68, which means that if each count were to lie within \n\u00b1100/\u221an% of the mean for approximately two-thirds of the observations, then \napproximately one-third of the observations would lie outside of this interval. \n Because of the statistical nature of radioactive decay, repeated counting of an \nundisturbed source will yield count-rate values in accordance with the frequency of a \nnormal distribution. Any deviations in these values from the normal distribution conform",
+        "normal distribution. Any deviations in these values from the normal distribution conform \nto the chi-square (\u03c72) statistical test. For this reason, the \u03c72 test is frequently applied to \ndetermine the performance and correct operation of a counting assembly. The term \n\u201cfigure of merit\u201d of a radioactive counting instrument is expressed as: \nFigure of merit = \u03b52/B \n\u03b5 = counter efficiency \nB = background count rate (dps)"
+      ],
+      "response": "\u03c3 = \u221an, where \u03c3 is the standard deviation and n is the number of counts accumulated.",
+      "user_input": "What formula does the chapter give for the standard deviation of counting statistics?",
+      "reference": "The standard deviation is given as \u00cf\u0192 = \u00e2\u02c6\u0161n, where n is the number of counts accumulated in a measurement.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.7936953898665757,
+      "context_precision": 0.9999999999,
+      "context_recall": 1.0
+    },
+    {
+      "id": "rad-42",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "What is the figure of merit for a radioactive counting instrument?",
+      "ground_truth": "The figure of merit is \u00ce\u00b5\u00c2\u00b2/B, where \u00ce\u00b5 is counter efficiency and B is background count rate.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "What is the figure of merit for a radioactive counting instrument?",
+        "How is the figure of merit defined for a radiation counting instrument?",
+        "Which metric is used to quantify the performance of a radioactive counting instrument?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "normal distribution. Any deviations in these values from the normal distribution conform",
+        "Figure of merit = \u03b52/B",
+        "Modern radiation detection systems often incorporate statistical analysis into their"
+      ],
+      "retrieved_contexts": [
+        "normal distribution. Any deviations in these values from the normal distribution conform \nto the chi-square (\u03c72) statistical test. For this reason, the \u03c72 test is frequently applied to \ndetermine the performance and correct operation of a counting assembly. The term \n\u201cfigure of merit\u201d of a radioactive counting instrument is expressed as: \nFigure of merit = \u03b52/B \n\u03b5 = counter efficiency \nB = background count rate (dps)",
+        "Figure of merit = \u03b52/B \n\u03b5 = counter efficiency \nB = background count rate (dps) \nIn the selection of instruments and conditions for assay of radioactive sources, the \nfigure of merit should be maximized. \n3.6\u2009Minimum Detectable Activity \n In situations where only very small quantities of radioactivity are to be measured, the \nlower limit of the ability of the instrument to detect that particular radionuclide should be",
+        "Modern radiation detection systems often incorporate statistical analysis into their \nsoftware. The user should understand the use and limitations of these programs to \nensure accurate results. \n Because the process of radioactive decay is a random phenomenon, the events being \ncounted form a random sequence in time. Therefore, counting for any finite time can \nyield only an estimate of the true counting rate. The precision of this estimate, being"
+      ],
+      "response": "Figure of merit = \u03b5\u00b2 / B\n\nwhere \u03b5 is the counter efficiency and B is the background count rate (dps). The figure of merit should be maximized when selecting instruments and assay conditions.",
+      "user_input": "What is the figure of merit for a radioactive counting instrument?",
+      "reference": "The figure of merit is \u00ce\u00b5\u00c2\u00b2/B, where \u00ce\u00b5 is counter efficiency and B is background count rate.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.6253802930384321,
+      "context_precision": 0.99999999995,
+      "context_recall": 1.0
+    },
+    {
+      "id": "rad-43",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "How is minimum sensitivity defined in practical terms?",
+      "ground_truth": "Minimum sensitivity, or limit of detection, is the net count rate above background that must be exceeded before a sample is deemed to contain detectable radioactivity with a specified confidence level.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "How is minimum sensitivity defined in practical terms?",
+        "In practical terms, how is minimum sensitivity defined?",
+        "What is the practical definition of minimum sensitivity?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "lower limit of the ability of the instrument to detect that particular radionuclide should be",
+        "background count rate and is calculated as:",
+        "\u03b5 = counting efficiency"
+      ],
+      "retrieved_contexts": [
+        "lower limit of the ability of the instrument to detect that particular radionuclide should be \nknown. The \u201cminimum sensitivity\u201d, also referred to as \u201climit of detection\u201d, is defined as \nthe net count rate above background that must be exceeded before a sample is \ndeemed to contain detectable radioactivity with a specified level of confidence. The \nminimum sensitivity is generally considered to be 3 standard deviations above the mean \nbackground count rate and is calculated as:",
+        "background count rate and is calculated as: \nMinimum sensitivity = (3 \u00d7 \u221aB)/t \nB = background count rate (dps) \nt = count time \n The minimum detectable activity is defined as the smallest quantity of radioactivity that \ncan be measured under the specific conditions of minimum sensitivity and counting \nefficiency of the instrument. It is calculated as: \nMinimum detectable activity = (Minimum sensitivity)/(\u03b5 \u00d7 F) \n\u03b5 = counting efficiency \nF = unit conversion factor",
+        "\u03b5 = counting efficiency \nF = unit conversion factor \nFor example, if minimum sensitivity is in units of dpm and minimum detectable activity is \ndesired to be in units of Bq, then F = 60 dpm/Bq. If minimum sensitivity is in units of cpm \nand minimum detectable activity is desired to be in units of \u00b5Ci, then F = 2.2\u2009\u00d7\u2009106 \ndpm/\u00b5Ci. \n3.7 Limit of Quantification \n The limit of quantification is the smallest quantity of radioactivity that can be"
+      ],
+      "response": "Minimum sensitivity (limit of detection) is the net count rate above background that must be exceeded for a sample to be declared to contain detectable radioactivity with a specified confidence. In practice it is taken as 3 standard deviations above the mean background count rate and is calculated as:\n\nMinimum sensitivity = (3 \u00d7 \u221aB) / t\n\nwhere B = background count rate (dps) and t = count time.  \n\nTo get the minimum detectable activity (MDA) in activity units use:\n\nMDA = Minimum sensitivity / (\u03b5 \u00d7 F)\n\nwhere \u03b5 = counting efficiency and F = unit conversion factor (e.g. F = 60 dpm/Bq, or F = 2.2\u00d710^6 dpm/\u00b5Ci).",
+      "user_input": "How is minimum sensitivity defined in practical terms?",
+      "reference": "Minimum sensitivity, or limit of detection, is the net count rate above background that must be exceeded before a sample is deemed to contain detectable radioactivity with a specified confidence level.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.427742759310505,
+      "context_precision": 0.9999999999,
+      "context_recall": 1.0
+    },
+    {
+      "id": "rad-44",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "What formula is given for minimum sensitivity?",
+      "ground_truth": "The formula is Minimum sensitivity = (3 \u00c3\u2014 \u00e2\u02c6\u0161B)/t, where B is background count rate and t is count time.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "What formula is given for minimum sensitivity?",
+        "What formula is provided for the minimum sensitivity?",
+        "How is minimum sensitivity expressed mathematically?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "background count rate and is calculated as:",
+        "lower limit of the ability of the instrument to detect that particular radionuclide should be",
+        "\u03b5 = counting efficiency"
+      ],
+      "retrieved_contexts": [
+        "background count rate and is calculated as: \nMinimum sensitivity = (3 \u00d7 \u221aB)/t \nB = background count rate (dps) \nt = count time \n The minimum detectable activity is defined as the smallest quantity of radioactivity that \ncan be measured under the specific conditions of minimum sensitivity and counting \nefficiency of the instrument. It is calculated as: \nMinimum detectable activity = (Minimum sensitivity)/(\u03b5 \u00d7 F) \n\u03b5 = counting efficiency \nF = unit conversion factor",
+        "lower limit of the ability of the instrument to detect that particular radionuclide should be \nknown. The \u201cminimum sensitivity\u201d, also referred to as \u201climit of detection\u201d, is defined as \nthe net count rate above background that must be exceeded before a sample is \ndeemed to contain detectable radioactivity with a specified level of confidence. The \nminimum sensitivity is generally considered to be 3 standard deviations above the mean \nbackground count rate and is calculated as:",
+        "\u03b5 = counting efficiency \nF = unit conversion factor \nFor example, if minimum sensitivity is in units of dpm and minimum detectable activity is \ndesired to be in units of Bq, then F = 60 dpm/Bq. If minimum sensitivity is in units of cpm \nand minimum detectable activity is desired to be in units of \u00b5Ci, then F = 2.2\u2009\u00d7\u2009106 \ndpm/\u00b5Ci. \n3.7 Limit of Quantification \n The limit of quantification is the smallest quantity of radioactivity that can be"
+      ],
+      "response": "Minimum sensitivity = (3 \u00d7 \u221aB) / t\n\nwhere B = background count rate (dps) and t = count time.",
+      "user_input": "What formula is given for minimum sensitivity?",
+      "reference": "The formula is Minimum sensitivity = (3 \u00c3\u2014 \u00e2\u02c6\u0161B)/t, where B is background count rate and t is count time.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.9642539181438932,
+      "context_precision": 0.9999999999,
+      "context_recall": 1.0
+    },
+    {
+      "id": "rad-45",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "What formula is given for minimum detectable activity?",
+      "ground_truth": "The formula is Minimum detectable activity = (Minimum sensitivity)/(\u00ce\u00b5 \u00c3\u2014 F), where \u00ce\u00b5 is counting efficiency and F is the unit conversion factor.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "What formula is given for minimum detectable activity?",
+        "What equation is used to calculate the minimum detectable activity?",
+        "Which formula defines the minimum detectable activity?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "background count rate and is calculated as:",
+        "\u03b5 = counting efficiency",
+        "lower limit of the ability of the instrument to detect that particular radionuclide should be"
+      ],
+      "retrieved_contexts": [
+        "background count rate and is calculated as: \nMinimum sensitivity = (3 \u00d7 \u221aB)/t \nB = background count rate (dps) \nt = count time \n The minimum detectable activity is defined as the smallest quantity of radioactivity that \ncan be measured under the specific conditions of minimum sensitivity and counting \nefficiency of the instrument. It is calculated as: \nMinimum detectable activity = (Minimum sensitivity)/(\u03b5 \u00d7 F) \n\u03b5 = counting efficiency \nF = unit conversion factor",
+        "\u03b5 = counting efficiency \nF = unit conversion factor \nFor example, if minimum sensitivity is in units of dpm and minimum detectable activity is \ndesired to be in units of Bq, then F = 60 dpm/Bq. If minimum sensitivity is in units of cpm \nand minimum detectable activity is desired to be in units of \u00b5Ci, then F = 2.2\u2009\u00d7\u2009106 \ndpm/\u00b5Ci. \n3.7 Limit of Quantification \n The limit of quantification is the smallest quantity of radioactivity that can be",
+        "lower limit of the ability of the instrument to detect that particular radionuclide should be \nknown. The \u201cminimum sensitivity\u201d, also referred to as \u201climit of detection\u201d, is defined as \nthe net count rate above background that must be exceeded before a sample is \ndeemed to contain detectable radioactivity with a specified level of confidence. The \nminimum sensitivity is generally considered to be 3 standard deviations above the mean \nbackground count rate and is calculated as:"
+      ],
+      "response": "Minimum detectable activity (MDA) = (Minimum sensitivity) / (\u03b5 \u00d7 F)\n\nMinimum sensitivity = (3 \u00d7 \u221aB) / t\n\nTherefore MDA = (3 \u00d7 \u221aB) / (t \u00d7 \u03b5 \u00d7 F)\n\nwhere B = background count rate (dps), t = count time, \u03b5 = counting efficiency, F = unit conversion factor.",
+      "user_input": "What formula is given for minimum detectable activity?",
+      "reference": "The formula is Minimum detectable activity = (Minimum sensitivity)/(\u00ce\u00b5 \u00c3\u2014 F), where \u00ce\u00b5 is counting efficiency and F is the unit conversion factor.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.7969909643881156,
+      "context_precision": 0.99999999995,
+      "context_recall": 1.0
+    },
+    {
+      "id": "rad-46",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "What is the practical interpretation of the limit of quantification?",
+      "ground_truth": "It is the smallest quantity of radioactivity that can be quantitatively determined with suitable precision and accuracy, and in practical terms it is usually considered to be 10 standard deviations above mean background count rate.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "What is the practical interpretation of the limit of quantification?",
+        "How should the limit of quantification be interpreted in practical terms?",
+        "What is the real-world significance of the limit of quantification?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "The limit of quantification is the smallest quantity of radioactivity that can be",
+        "\u03b5 = counting efficiency",
+        "lower limit of the ability of the instrument to detect that particular radionuclide should be"
+      ],
+      "retrieved_contexts": [
+        "The limit of quantification is the smallest quantity of radioactivity that can be \nquantitatively determined with suitable precision and accuracy. The limit of \nquantification is used particularly for the determination of impurities and degradation \nproducts. In practical terms, the limit of quantification is usually considered to be 10 \nstandard deviations above the mean background count rate. \n3.8 Counting Losses",
+        "\u03b5 = counting efficiency \nF = unit conversion factor \nFor example, if minimum sensitivity is in units of dpm and minimum detectable activity is \ndesired to be in units of Bq, then F = 60 dpm/Bq. If minimum sensitivity is in units of cpm \nand minimum detectable activity is desired to be in units of \u00b5Ci, then F = 2.2\u2009\u00d7\u2009106 \ndpm/\u00b5Ci. \n3.7 Limit of Quantification \n The limit of quantification is the smallest quantity of radioactivity that can be",
+        "lower limit of the ability of the instrument to detect that particular radionuclide should be \nknown. The \u201cminimum sensitivity\u201d, also referred to as \u201climit of detection\u201d, is defined as \nthe net count rate above background that must be exceeded before a sample is \ndeemed to contain detectable radioactivity with a specified level of confidence. The \nminimum sensitivity is generally considered to be 3 standard deviations above the mean \nbackground count rate and is calculated as:"
+      ],
+      "response": "The limit of quantification is the smallest amount of radioactivity that can be measured with acceptable precision and accuracy \u2014 in practice it is taken to be about 10 standard deviations above the mean background count rate and is used when quantifying low-level impurities and degradation products.",
+      "user_input": "What is the practical interpretation of the limit of quantification?",
+      "reference": "It is the smallest quantity of radioactivity that can be quantitatively determined with suitable precision and accuracy, and in practical terms it is usually considered to be 10 standard deviations above mean background count rate.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.8727481143473347,
+      "context_precision": 0.9999999999,
+      "context_recall": 1.0
+    },
+    {
+      "id": "rad-47",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "What is dead time in counting systems?",
+      "ground_truth": "Dead time is the minimum interval required for the counter to resolve two consecutive signal pulses.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "What is dead time in counting systems?",
+        "What does \"dead time\" mean in counting systems?",
+        "How is \"dead time\" defined in counting systems?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "standard deviations above the mean background count rate.",
+        "microseconds for Geiger counters. Nuclear events occurring within the dead time of the",
+        "Modern radiation detection systems often incorporate statistical analysis into their"
+      ],
+      "retrieved_contexts": [
+        "standard deviations above the mean background count rate. \n3.8 Counting Losses \n The minimum time interval that is required for the counter to resolve two consecutive \nsignal pulses is known as the dead time. The dead time is typically on the order of \nmicroseconds for proportional and scintillation counters and to hundreds of \nmicroseconds for Geiger counters. Nuclear events occurring within the dead time of the",
+        "microseconds for Geiger counters. Nuclear events occurring within the dead time of the \ncounter will not be registered. The corrected count rate, R, can be calculated using the \nformula: \nR = r/(1 \u2212 r \u00d7 \u03c4) \nr = observed count rate \n\u03c4 = dead time \nThe correction formula assumes a nonextendable dead time. The observed count rate, \nr, refers to the gross sample count rate and is not to be corrected for background before",
+        "Modern radiation detection systems often incorporate statistical analysis into their \nsoftware. The user should understand the use and limitations of these programs to \nensure accurate results. \n Because the process of radioactive decay is a random phenomenon, the events being \ncounted form a random sequence in time. Therefore, counting for any finite time can \nyield only an estimate of the true counting rate. The precision of this estimate, being"
+      ],
+      "response": "Dead time is the minimum time interval a counter needs to resolve two consecutive signal pulses. Any nuclear events that occur during this interval will not be registered. Typical values are on the order of microseconds for proportional and scintillation counters and up to hundreds of microseconds for Geiger counters.\n\nTo correct for losses from a nonextendable dead time \u03c4, the true count rate R can be estimated from the observed (gross) count rate r using\nR = r / (1 \u2212 r\u00b7\u03c4),\nwhere r is the observed gross sample count rate (not background-corrected).",
+      "user_input": "What is dead time in counting systems?",
+      "reference": "Dead time is the minimum interval required for the counter to resolve two consecutive signal pulses.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.8273502782298781,
+      "context_precision": 0.99999999995,
+      "context_recall": 1.0
+    },
+    {
+      "id": "rad-48",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "What correction formula is given for count-rate losses due to dead time?",
+      "ground_truth": "The corrected count rate is R = r/(1 \u00e2\u02c6\u2019 r \u00c3\u2014 \u00cf\u201e), where r is observed count rate and \u00cf\u201e is dead time.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "What correction formula is given for count-rate losses due to dead time?",
+        "What formula is used to correct count-rate losses caused by dead time?",
+        "Which correction formula should be applied to account for count-rate losses due to dead time?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "microseconds for Geiger counters. Nuclear events occurring within the dead time of the",
+        "standard deviations above the mean background count rate.",
+        "r, refers to the gross sample count rate and is not to be corrected for background before"
+      ],
+      "retrieved_contexts": [
+        "microseconds for Geiger counters. Nuclear events occurring within the dead time of the \ncounter will not be registered. The corrected count rate, R, can be calculated using the \nformula: \nR = r/(1 \u2212 r \u00d7 \u03c4) \nr = observed count rate \n\u03c4 = dead time \nThe correction formula assumes a nonextendable dead time. The observed count rate, \nr, refers to the gross sample count rate and is not to be corrected for background before",
+        "standard deviations above the mean background count rate. \n3.8 Counting Losses \n The minimum time interval that is required for the counter to resolve two consecutive \nsignal pulses is known as the dead time. The dead time is typically on the order of \nmicroseconds for proportional and scintillation counters and to hundreds of \nmicroseconds for Geiger counters. Nuclear events occurring within the dead time of the",
+        "r, refers to the gross sample count rate and is not to be corrected for background before \nuse in this equation. For general validity, the value of r \u00d7 \u03c4 should not exceed 0.1. \n3.9 Linearity and Range \n When a radiation detection instrument is used in a quantitative measurement, the \ninstrument should be suitable for the type(s) of radiation to be measured, and the \ninstrument response should be linear over the range of measurements or a correction"
+      ],
+      "response": "R = r / (1 \u2212 r \u00d7 \u03c4)\n\nwhere r = observed (gross) count rate, \u03c4 = dead time. This assumes a nonextendable dead time and is valid when r\u00d7\u03c4 \u2272 0.1.",
+      "user_input": "What correction formula is given for count-rate losses due to dead time?",
+      "reference": "The corrected count rate is R = r/(1 \u00e2\u02c6\u2019 r \u00c3\u2014 \u00cf\u201e), where r is observed count rate and \u00cf\u201e is dead time.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.906122566300103,
+      "context_precision": 0.8333333332916666,
+      "context_recall": 1.0
+    },
+    {
+      "id": "rad-49",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "What does the chapter say about establishing linearity for radiation detection instruments?",
+      "ground_truth": "Normally at least five different quantities of radioactivity should be used to establish linearity, and they should bracket the range routinely measured in the application.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "What does the chapter say about establishing linearity for radiation detection instruments?",
+        "How does the chapter describe establishing linearity for radiation detection instruments?",
+        "What guidance does the chapter provide on verifying the linear response of radiation detection instruments?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "r, refers to the gross sample count rate and is not to be corrected for background before",
+        "instrument response should be linear over the range of measurements or a correction",
+        "The purpose of this chapter is to provide information regarding radioactivity\u2014 including"
+      ],
+      "retrieved_contexts": [
+        "r, refers to the gross sample count rate and is not to be corrected for background before \nuse in this equation. For general validity, the value of r \u00d7 \u03c4 should not exceed 0.1. \n3.9 Linearity and Range \n When a radiation detection instrument is used in a quantitative measurement, the \ninstrument should be suitable for the type(s) of radiation to be measured, and the \ninstrument response should be linear over the range of measurements or a correction",
+        "instrument response should be linear over the range of measurements or a correction \nfactor should be applied. Normally, a minimum of five different quantities of radioactivity \nare used to establish linearity. These quantities should bracket the range of radioactivity \nlevels that are routinely measured in a particular application. \n3.10 Calibration Standards \n All radioactivity assays should be performed using measurement systems that have",
+        "The purpose of this chapter is to provide information regarding radioactivity\u2014 including \ndefinitions, types of decay, and general considerations relating to radioactive decay, \ncounting, radionuclide production, purity, and labeling\u2014as well as instrumentation for \ndetection and measurement of radioactive emissions. \n Specific information on standards for radionuclide identification and assay, including \ninstrument qualification, performance checks, identification of radionuclides and"
+      ],
+      "response": "The chapter says the detector must be appropriate for the radiation type and its response should be linear over the measurement range (or a correction factor applied if not). Linearity is normally established using at least five different activity levels, chosen to bracket the range of radioactivity routinely measured.",
+      "user_input": "What does the chapter say about establishing linearity for radiation detection instruments?",
+      "reference": "Normally at least five different quantities of radioactivity should be used to establish linearity, and they should bracket the range routinely measured in the application.",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.6196594347237425,
+      "context_precision": 0.49999999995,
+      "context_recall": 1.0
+    },
+    {
+      "id": "rad-50",
+      "expected_source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+      "expected_doc_id": null,
+      "question": "What are the four common production routes for artificially produced radionuclides?",
+      "ground_truth": "The four common production routes are fission, neutron activation, charged-particle-induced reactions in a cyclotron, and radionuclide generators.",
+      "filters": {
+        "source": "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      },
+      "expanded_queries": [
+        "What are the four common production routes for artificially produced radionuclides?",
+        "What are the four common methods for producing artificial radionuclides?",
+        "Which four production routes are most commonly used to generate artificially produced radionuclides?"
+      ],
+      "candidate_count": 3,
+      "rerank_used": true,
+      "rerank_fallback_used": false,
+      "selected_sources": [
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf",
+        "RADIOACTIVITY\u2014THEORY AND PRACTICE.pdf"
+      ],
+      "selected_doc_ids": [
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440",
+        "9188d6a06c464449b6bb5d9289470440"
+      ],
+      "selected_headings": [
+        "therapeutic radiopharmaceuticals, e.g., radium-223.",
+        "characteristics of all four production methods are summarized in Table 1.",
+        "samarium-"
+      ],
+      "retrieved_contexts": [
+        "therapeutic radiopharmaceuticals, e.g., radium-223. \n There are four common production routes for artificially produced radionuclides: \nfission, neutron activation, charged-particle-induced reactions (cyclotron), and \nradionuclide generators. \n Fission by-products refer to radionuclides that are obtained as by-products of the \nfission of uranium (uranium-235). These radionuclides, whether directly produced \nfission fragments or subsequent members in a decay chain originating from a fission",
+        "characteristics of all four production methods are summarized in Table 1. \nTable 1. Production Methods of Radionuclides \nProduction Method \nNuclear \nReactor \n(fission by-\nproduct) \nNuclear \nReactor \n(neutron \nactivation) Cyclotron \nRadionuclide \nGenerator \nBombarding particle Neutron Neutron \nProton, \ndeuteron, \ntriton, alpha \nProduction by \ndecay of parent \nProduct Neutron excess \nNeutron \nexcess Neutron poor \nNeutron poor or \nexcess \nTypical decay \npathway \u03b2\u2212 \u03b2\u2212 \nPositron \nemission,",
+        "samarium-\n153, \nThallium-201, \niodine-123, \ngallium-67, \nindium-111, \nfluorine-18, \nTechnetium-\n99m, krypton-\n81m \ngallium-68, \nrubidium-82 \nProduction Method \nNuclear \nReactor \n(fission by-\nproduct) \nNuclear \nReactor \n(neutron \nactivation) Cyclotron \nRadionuclide \nGenerator \nlutetium-177 carbon-11 \n Other methods of radionuclide production have been developed but currently are not \nused to produce radionuclides used in radiopharmaceuticals. \n3.12 Carrier"
+      ],
+      "response": "Fission, neutron activation, charged-particle-induced reactions (cyclotron), and radionuclide generators.",
+      "user_input": "What are the four common production routes for artificially produced radionuclides?",
+      "reference": "The four common production routes are fission, neutron activation, charged-particle-induced reactions in a cyclotron, and radionuclide generators.",
+      "faithfulness": 0.2,
+      "answer_relevancy": 0.6782331993007008,
+      "context_precision": 0.9999999999666667,
+      "context_recall": 1.0
+    }
+  ]
+}

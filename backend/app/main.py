@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 import json
 import logging
 from pathlib import Path
+import re
 from time import perf_counter
 from uuid import uuid4
 
@@ -16,7 +17,8 @@ from app.schemas import (
     AskRequest, AskResponse, AskWithFileResponse, ChatResponse, HealthResponse, UploadResponse,
     RegisterRequest, LoginRequest, AuthResponse, FileRecord, DeleteFileResponse,
     ConversationRecord, CreateConversationResponse, DeleteConversationResponse, CleanupVectorsResponse,
-    ImageModelOption,
+    ImageModelOption, RunEvaluationRequest, RunEvaluationResponse,
+    ImportChatsToEvaluationRequest, ImportChatsToEvaluationResponse,
 )
 from app.services.document_loader import SUPPORTED_EXTENSIONS
 from app import database, auth
@@ -35,6 +37,50 @@ app.add_middleware(
     allow_methods=['*'],
     allow_headers=['*'],
 )
+
+
+_TRIVIAL_CHAT_PATTERNS = {
+    'hi', 'hello', 'hey', 'ok', 'okay', 'thanks', 'thank you', 'yo', 'sup',
+}
+
+
+def _normalize_eval_text(value: str) -> str:
+    return re.sub(r'\s+', ' ', (value or '').strip()).lower()
+
+
+def _is_valid_eval_chat_pair(question: str, answer: str) -> bool:
+    q = _normalize_eval_text(question)
+    a = _normalize_eval_text(answer)
+
+    if not q or not a:
+        return False
+    if q in _TRIVIAL_CHAT_PATTERNS:
+        return False
+    if q == '[object object]' or a == '[object object]':
+        return False
+    if len(q) < 8 or len(a) < 16:
+        return False
+    if '(file:' in q:
+        return False
+    if q.startswith('error:') or a.startswith('error:'):
+        return False
+    if 'uploaded image' in q or 'uploaded image' in a:
+        return False
+    if 'what is this image' in q or 'what is in this image' in q:
+        return False
+    if 'i can provide a general definition' in a:
+        return False
+    return True
+
+
+def _shared_library_owner_ids() -> list[str]:
+    admin_ids = [str(user_id) for user_id in database.get_admin_user_ids()]
+    # Keep the legacy marker so previously indexed shared files remain retrievable
+    # until they are re-uploaded or cleaned up.
+    owner_ids = list(dict.fromkeys(admin_ids + ['admin']))
+    if not admin_ids:
+        logger.warning('No admin users found while resolving shared library owner ids')
+    return owner_ids
 
 
 @lru_cache(maxsize=1)
@@ -166,7 +212,7 @@ async def upload(
     metadata = {
         'doc_id': resolved_doc_id,
         'source': file.filename,
-        'owner_id': 'admin',
+        'owner_id': str(current_user['user_id']),
         'tenant_id': None,
         'tags': [],
         'uploaded_at': datetime.now(timezone.utc).isoformat(),
@@ -209,7 +255,7 @@ def ask(req: AskRequest, current_user: dict = Depends(get_current_user)) -> AskR
         top_k=req.top_k,
         history=req.history,
         filters=filters,
-        owner_ids=['admin'],
+        owner_ids=_shared_library_owner_ids(),
     )
     elapsed_ms = int((perf_counter() - start) * 1000)
     logger.info('Ask completed sources=%s elapsed_ms=%s', len(sources), elapsed_ms)
@@ -334,7 +380,7 @@ async def chat(
         history=history,
         file_path=file_path,
         filters=filters,
-        owner_ids=['admin'],
+        owner_ids=_shared_library_owner_ids(),
     )
 
     user_message_content = f'{question} (file: {file.filename})' if file is not None and file.filename else question
@@ -383,8 +429,143 @@ def get_files(current_user: dict = Depends(get_admin_user)) -> list[FileRecord]:
 def cleanup_file_vectors(current_user: dict = Depends(get_admin_user)) -> CleanupVectorsResponse:
     files = database.get_all_admin_files()
     valid_doc_ids = {str(file['doc_id']) for file in files}
-    result = get_rag_service().cleanup_user_vectors('admin', valid_doc_ids)
-    return CleanupVectorsResponse(**result)
+    text_removed: list[str] = []
+    image_removed: list[str] = []
+    for admin_owner_id in _shared_library_owner_ids():
+        result = get_rag_service().cleanup_user_vectors(admin_owner_id, valid_doc_ids)
+        text_removed.extend(result.get('text_doc_ids_removed', []))
+        image_removed.extend(result.get('image_doc_ids_removed', []))
+    total_removed = len(set(text_removed + image_removed))
+    return CleanupVectorsResponse(
+        success=True,
+        message=f'Removed {total_removed} stale library entries.',
+        text_doc_ids_removed=sorted(set(text_removed)),
+        image_doc_ids_removed=sorted(set(image_removed)),
+    )
+
+
+@app.post('/evaluation/run', response_model=RunEvaluationResponse)
+def run_evaluation(req: RunEvaluationRequest, current_user: dict = Depends(get_admin_user)) -> RunEvaluationResponse:
+    base_data_dir = settings.upload_dir.parent.resolve()
+    dataset_path = (base_data_dir / 'eval' / 'sample_ragas_eval.jsonl') if not req.dataset_path else Path(req.dataset_path)
+    if not dataset_path.is_absolute():
+        dataset_path = (base_data_dir / dataset_path).resolve()
+    else:
+        dataset_path = dataset_path.resolve()
+
+    try:
+        dataset_path.relative_to(base_data_dir)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail='dataset_path must be inside backend/data') from exc
+
+    if not dataset_path.exists():
+        raise HTTPException(status_code=404, detail=f'Dataset not found: {dataset_path}')
+
+    output_path = (base_data_dir / 'eval' / 'latest_ragas_report.json').resolve()
+    try:
+        from app.evaluate_ragas import run_ragas_evaluation
+        report = run_ragas_evaluation(
+            dataset_path,
+            output_path=output_path,
+            top_k=req.top_k,
+            use_rerank=req.use_rerank,
+        )
+    except Exception as exc:
+        logger.exception('Evaluation failed dataset=%s', dataset_path)
+        raise HTTPException(status_code=500, detail=f'Evaluation failed: {exc}') from exc
+
+    return RunEvaluationResponse(success=True, **report)
+
+
+@app.get('/evaluation/latest', response_model=RunEvaluationResponse)
+def get_latest_evaluation(current_user: dict = Depends(get_admin_user)) -> RunEvaluationResponse:
+    output_path = (settings.upload_dir.parent.resolve() / 'eval' / 'latest_ragas_report.json').resolve()
+    try:
+        from app.evaluate_ragas import load_saved_ragas_report
+        report = load_saved_ragas_report(output_path)
+    except Exception as exc:
+        logger.exception('Failed to load latest evaluation report')
+        raise HTTPException(status_code=500, detail=f'Failed to load latest evaluation report: {exc}') from exc
+
+    if not report:
+        raise HTTPException(status_code=404, detail='No saved evaluation report found')
+    return RunEvaluationResponse(success=True, **report)
+
+
+@app.post('/evaluation/import-chats', response_model=ImportChatsToEvaluationResponse)
+def import_chats_to_evaluation(
+    req: ImportChatsToEvaluationRequest,
+    current_user: dict = Depends(get_admin_user),
+) -> ImportChatsToEvaluationResponse:
+    base_data_dir = settings.upload_dir.parent.resolve()
+    dataset_path = (base_data_dir / 'eval' / 'sample_ragas_eval.jsonl') if not req.dataset_path else Path(req.dataset_path)
+    if not dataset_path.is_absolute():
+        dataset_path = (base_data_dir / dataset_path).resolve()
+    else:
+        dataset_path = dataset_path.resolve()
+
+    try:
+        dataset_path.relative_to(base_data_dir)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail='dataset_path must be inside backend/data') from exc
+
+    limit = max(1, min(req.limit, settings.evaluation_max_rows))
+    pairs = database.get_recent_chat_pairs(limit=limit)
+
+    existing_ids: set[str] = set()
+    if dataset_path.exists():
+        for line in dataset_path.read_text(encoding='utf-8').splitlines():
+            if not line.strip():
+                continue
+            try:
+                item = json.loads(line)
+                if item.get('id'):
+                    existing_ids.add(str(item['id']))
+            except json.JSONDecodeError:
+                continue
+
+    rows_to_add: list[str] = []
+    skipped_existing = 0
+    skipped_invalid = 0
+    seen_questions: set[str] = set()
+    for pair in pairs:
+        row_id = f"chat-{pair['assistant_message_id']}"
+        if row_id in existing_ids:
+            skipped_existing += 1
+            continue
+        normalized_question = _normalize_eval_text(pair['question'])
+        if normalized_question in seen_questions:
+            skipped_invalid += 1
+            continue
+        if not _is_valid_eval_chat_pair(pair['question'], pair['answer']):
+            skipped_invalid += 1
+            continue
+        seen_questions.add(normalized_question)
+        payload = {
+            'id': row_id,
+            'question': pair['question'],
+            'ground_truth': pair['answer'],
+            'source': 'stored_chat',
+            'username': pair['username'],
+            'conversation_id': pair['conversation_id'],
+            'created_at': pair['created_at'],
+        }
+        rows_to_add.append(json.dumps(payload, ensure_ascii=True))
+
+    dataset_path.parent.mkdir(parents=True, exist_ok=True)
+    existing_text = dataset_path.read_text(encoding='utf-8') if dataset_path.exists() else ''
+    merged_lines = [line for line in existing_text.splitlines() if line.strip()]
+    merged_lines.extend(rows_to_add)
+    dataset_path.write_text('\n'.join(merged_lines) + ('\n' if merged_lines else ''), encoding='utf-8')
+
+    return ImportChatsToEvaluationResponse(
+        success=True,
+        dataset_path=str(dataset_path),
+        imported=len(rows_to_add),
+        total_pairs_seen=len(pairs),
+        skipped_existing=skipped_existing,
+        skipped_invalid=skipped_invalid,
+    )
 
 
 @app.delete('/files/{file_id}', response_model=DeleteFileResponse)

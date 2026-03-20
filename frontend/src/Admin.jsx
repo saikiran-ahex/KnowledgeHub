@@ -11,6 +11,10 @@ async function readApiResponse(res) {
   return { detail: await res.text() };
 }
 
+function formatMetricPercent(value) {
+  return value == null ? 'n/a' : `${(Number(value) * 100).toFixed(2)}%`;
+}
+
 export default function Admin() {
   const { theme, toggleTheme } = useTheme();
   const [token, setToken] = useState(localStorage.getItem('token'));
@@ -24,10 +28,16 @@ export default function Admin() {
   const [loginPassword, setLoginPassword] = useState('');
   const [authError, setAuthError] = useState('');
   const [notification, setNotification] = useState(null);
-  const fileInputRef = useState(null);
+  const [evaluationBusy, setEvaluationBusy] = useState(false);
+  const [importBusy, setImportBusy] = useState(false);
+  const [evaluationDatasetPath, setEvaluationDatasetPath] = useState('eval/sample_ragas_eval.jsonl');
+  const [evaluationResult, setEvaluationResult] = useState(null);
 
   useEffect(() => {
-    if (token && isAdmin) loadFiles();
+    if (token && isAdmin) {
+      loadFiles();
+      loadLatestEvaluation();
+    }
   }, [token, isAdmin]);
 
   const FILES_PER_PAGE = 3;
@@ -168,11 +178,77 @@ export default function Admin() {
     }
   }
 
+  async function handleRunEvaluation() {
+    setEvaluationBusy(true);
+    try {
+      const res = await fetch(`${API_BASE}/evaluation/run`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          dataset_path: evaluationDatasetPath.trim() || null,
+        }),
+      });
+      const data = await readApiResponse(res);
+      if (!res.ok) throw new Error(data.detail || 'Evaluation failed');
+      setEvaluationResult(data);
+      showNotification(`Evaluation completed for ${data.samples} samples`, 'success');
+    } catch (err) {
+      showNotification(`Error: ${err.message || err}`, 'error');
+    } finally {
+      setEvaluationBusy(false);
+    }
+  }
+
+  async function loadLatestEvaluation() {
+    try {
+      const res = await fetch(`${API_BASE}/evaluation/latest`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await readApiResponse(res);
+      if (!res.ok) return;
+      setEvaluationResult(data);
+    } catch (err) {
+      console.error('Failed to load latest evaluation:', err);
+    }
+  }
+
+  async function handleImportChatsToEvaluation() {
+    setImportBusy(true);
+    try {
+      const res = await fetch(`${API_BASE}/evaluation/import-chats`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          dataset_path: evaluationDatasetPath.trim() || null,
+        }),
+      });
+      const data = await readApiResponse(res);
+      if (!res.ok) throw new Error(data.detail || 'Import failed');
+      showNotification(
+        `Imported ${data.imported} chat pairs. Skipped ${data.skipped_existing} existing and ${data.skipped_invalid} invalid rows.`,
+        'success'
+      );
+    } catch (err) {
+      showNotification(`Error: ${err.message || err}`, 'error');
+    } finally {
+      setImportBusy(false);
+    }
+  }
+
   if (!token || !isAdmin) {
     return (
       <div className="loginPage">
         <div className="loginCard">
-          <h1>🔐 Admin Panel</h1>
+          <h1>
+            <span className="emoji">🔐</span>
+            <span className="gradientText"> Admin Panel</span>
+          </h1>
           <p>Sign in as Admin</p>
 
           {authError && <div className="authError">{authError}</div>}
@@ -271,57 +347,50 @@ export default function Admin() {
       </header>
 
       <main className="adminMain">
-        {/* <section className="adminSection">
-            <h2>Upload Files</h2>
-            <p>Upload files that all users can search and chat with</p>
-            <p className="uploadInfo">Max upload size: {MAX_UPLOAD_SIZE_MB}MB per file</p>
-
-            <label className="uploadBtn">
-              {uploading ? 'Uploading...' : 'Choose & Upload Files'}
-              <input
-                type="file"
-                multiple
-                accept={SUPPORTED}
-                onChange={handleUpload}
-                disabled={uploading}
-                style={{ display: 'none' }}
-              />
-            </label>
-
-            {uploadResults.length > 0 && (
-              <div className="uploadResults">
-                {uploadResults.map((row, idx) => (
-                  <div key={idx} className={`uploadResultItem ${row.error ? 'error' : 'success'}`}>
-                    <div className="resultIcon">
-                      {row.error ? '❌' : '✅'}
-                    </div>
-                    <div className="resultContent">
-                      <div className="resultTitle">
-                        {row.error ? 'Upload Failed' : 'Upload Complete'}
-                      </div>
-                      <div className="resultDetails">
-                        {row.error
-                          ? `${row.filename || 'File'}: ${row.error}`
-                          : `${row.filename} • ${row.chunks_indexed} sections ready`
-                        }
-                      </div>
-                    </div>
+        <section className="adminSection">
+          <div className="sectionHeader">
+            <h2>Evaluation</h2>
+            <div className="fileActions">
+              <button onClick={handleImportChatsToEvaluation} className="cleanupBtn" disabled={importBusy}>
+                {importBusy ? 'Importing...' : 'Import Stored Chats'}
+              </button>
+              <button onClick={handleRunEvaluation} className="cleanupBtn" disabled={evaluationBusy}>
+                {evaluationBusy ? 'Running...' : 'Run Evaluation'}
+              </button>
+            </div>
+          </div>
+          <p>Test your data file to check how well the system is working.</p>
+          {evaluationResult ? (
+            <div className="evalResults">
+              {evaluationResult.truncated ? (
+                <div className="evalMeta">Only the latest {evaluationResult.max_rows} rows were evaluated.</div>
+              ) : null}
+              <div className="evalGrid">
+                {Object.entries(evaluationResult.summary || {}).map(([name, value]) => (
+                  <div key={name} className="evalCard">
+                    <div className="evalLabel">{name}</div>
+                    <div className="evalValue">{formatMetricPercent(value)}</div>
                   </div>
                 ))}
               </div>
-            )}
-          </section> */}
 
+            </div>
+          ) : null}
+        </section>
         <section className="adminSection">
           <div className="sectionHeader">
             <h2>📁 Shared Files ({files.length})</h2>
             <div className="fileActions">
-              <button
-                className="plusBtn"
-                onClick={() => setUploadOpen(true)}
-              >
-                +
-              </button>
+              <div className="plusWrapper">
+                <button
+                  className="plusBtn"
+                  onClick={() => setUploadOpen(true)}
+                >
+                  +
+                </button>
+
+                <span className="tooltip">Upload Files</span>
+              </div>
             </div>
             {uploadOpen && (
               <div className="uploadModal">
@@ -434,6 +503,7 @@ export default function Admin() {
             </div>
           )}
         </section>
+
       </main>
     </div>
   );

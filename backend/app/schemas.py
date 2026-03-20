@@ -16,6 +16,8 @@ class RetrievalFilters(BaseModel):
     owner_id: str | None = None
     tenant_id: str | None = None
     file_type: str | None = None
+    source: str | None = None
+    doc_id: str | None = None
     tags: list[str] | None = None
 
 
@@ -96,6 +98,39 @@ class CleanupVectorsResponse(BaseModel):
     message: str
     text_doc_ids_removed: list[str] = []
     image_doc_ids_removed: list[str] = []
+
+
+class RunEvaluationRequest(BaseModel):
+    dataset_path: str | None = None
+    top_k: int | None = None
+    use_rerank: bool = True
+
+
+class ImportChatsToEvaluationRequest(BaseModel):
+    dataset_path: str | None = None
+    limit: int = 100
+
+
+class ImportChatsToEvaluationResponse(BaseModel):
+    success: bool
+    dataset_path: str
+    imported: int
+    total_pairs_seen: int
+    skipped_existing: int
+    skipped_invalid: int
+
+
+class RunEvaluationResponse(BaseModel):
+    success: bool
+    dataset_path: str
+    output_path: str | None = None
+    samples: int
+    total_rows: int
+    max_rows: int
+    truncated: bool = False
+    use_rerank: bool = True
+    summary: dict[str, float | None]
+    results: list[dict] = []
 
 
 class ConversationRecord(BaseModel):

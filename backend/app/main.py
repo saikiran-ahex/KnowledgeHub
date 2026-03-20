@@ -1,3 +1,4 @@
+import base64
 from functools import lru_cache
 from datetime import datetime, timezone
 import json
@@ -349,6 +350,7 @@ async def chat(
             filters = {}
 
     file_path = None
+    image_base64: str | None = None
     if file is not None and file.filename:
         ext = Path(file.filename).suffix.lower()
         if ext not in SUPPORTED_EXTENSIONS:
@@ -358,8 +360,7 @@ async def chat(
             )
         if ext in {'.png', '.jpg', '.jpeg', '.webp'} and image_model and image_model not in ALLOWED_ADHOC_IMAGE_MODELS:
             raise HTTPException(status_code=400, detail=f'Unsupported image model. Allowed: {sorted(ALLOWED_ADHOC_IMAGE_MODELS)}')
-        
-        print("image_model: ", image_model)
+
         payload = await file.read()
         max_bytes = settings.max_upload_size_mb * 1024 * 1024
         if len(payload) > max_bytes:
@@ -367,6 +368,8 @@ async def chat(
         file_path = settings.upload_dir / f'chat_{file.filename}'
         file_path.write_bytes(payload)
         logger.info('Chat received ad-hoc file path=%s bytes=%s', file_path, len(payload))
+        if ext in {'.png', '.jpg', '.jpeg', '.webp'}:
+            image_base64 = base64.b64encode(payload).decode('utf-8')
 
     if conversation_id:
         conversation = database.get_conversation(conversation_id, current_user['user_id'])
@@ -386,11 +389,11 @@ async def chat(
         owner_ids=_shared_library_owner_ids(),
     )
 
-    user_message_content = f'{question} (file: {file.filename})' if file is not None and file.filename else question
+    user_message_content = question
     message_count = database.count_conversation_messages(conversation_id)
     if message_count == 0:
         database.update_conversation_title(conversation_id, current_user['user_id'], question[:30])
-    database.append_conversation_message(conversation_id, 'user', user_message_content, [])
+    database.append_conversation_message(conversation_id, 'user', user_message_content, [], image_base64)
     database.append_conversation_message(conversation_id, 'assistant', answer, sources)
 
     elapsed_ms = int((perf_counter() - start) * 1000)

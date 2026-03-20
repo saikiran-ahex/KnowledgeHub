@@ -65,11 +65,13 @@ def init_db():
                     content TEXT NOT NULL,
                     sources_json TEXT NOT NULL,
                     created_at TEXT NOT NULL,
+                    image_base64 TEXT,
                     FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
                 )'''
             )
             c.execute('ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE')
             c.execute('ALTER TABLE files ADD COLUMN IF NOT EXISTS content_hash TEXT')
+            c.execute('ALTER TABLE conversation_messages ADD COLUMN IF NOT EXISTS image_base64 TEXT')
         conn.commit()
 
 
@@ -296,14 +298,20 @@ def delete_conversation(conversation_id: str, user_id: int):
         return dict(conversation)
 
 
-def append_conversation_message(conversation_id: str, role: str, content: str, sources: list[dict] | None = None):
+def append_conversation_message(
+    conversation_id: str,
+    role: str,
+    content: str,
+    sources: list[dict] | None = None,
+    image_base64: str | None = None,
+):
     now = datetime.now(timezone.utc).isoformat()
     with get_db() as conn:
         with conn.cursor() as c:
             c.execute(
-                '''INSERT INTO conversation_messages (conversation_id, role, content, sources_json, created_at)
-                   VALUES (%s, %s, %s, %s, %s) RETURNING id''',
-                (conversation_id, role, content, json.dumps(sources or []), now),
+                '''INSERT INTO conversation_messages (conversation_id, role, content, sources_json, created_at, image_base64)
+                   VALUES (%s, %s, %s, %s, %s, %s) RETURNING id''',
+                (conversation_id, role, content, json.dumps(sources or []), now, image_base64),
             )
             message_id = c.fetchone()['id']
             c.execute('UPDATE conversations SET updated_at = %s WHERE id = %s', (now, conversation_id))

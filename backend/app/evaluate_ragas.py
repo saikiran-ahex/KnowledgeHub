@@ -8,6 +8,7 @@ from statistics import mean
 from datasets import Dataset
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
+from app import database
 from app.config import get_settings
 from app.services.rag_service import RagService
 
@@ -83,7 +84,7 @@ class NoTemperatureLangchainLLMWrapper:
 def load_dataset(path: Path, *, max_rows: int | None = None) -> tuple[list[dict], int]:
     parsed_rows: list[dict] = []
     total_rows = 0
-    for idx, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+    for idx, line in enumerate(path.read_text(encoding="utf-8-sig").splitlines(), start=1):
         if not line.strip():
             continue
         total_rows += 1
@@ -97,42 +98,99 @@ def load_dataset(path: Path, *, max_rows: int | None = None) -> tuple[list[dict]
                 "id": item.get("id", idx),
                 "question": question,
                 "ground_truth": ground_truth,
+                "filters": item.get("filters") or {},
+                "source": item.get("source"),
+                "doc_id": item.get("doc_id"),
             }
         )
     rows = parsed_rows[-max_rows:] if max_rows is not None else parsed_rows
     return rows, total_rows
 
 
-def collect_prediction(rag: RagService, question: str, top_k: int | None) -> dict:
+def collect_prediction(
+    rag: RagService,
+    question: str,
+    top_k: int | None,
+    filters: dict | None = None,
+    *,
+    use_rerank: bool = True,
+) -> dict:
     queries = [question]
     queries.extend([q for q in rag._expand_query(question) if q.lower() != question.lower()])
+    effective_filters = dict(filters or {})
+    admin_owner_ids = list(dict.fromkeys([str(user_id) for user_id in database.get_admin_user_ids()] + ["admin"]))
 
     retrieve_k = top_k or rag.settings.retrieval_top_k
-    candidates = rag._retrieve_candidates(queries, retrieve_k, owner_ids=["admin"])
-    if rag.reranker is not None:
-        selected_docs = rag.reranker.compress_documents(candidates, query=question)
+    candidates = rag._retrieve_candidates(queries, retrieve_k, filters=effective_filters, owner_ids=admin_owner_ids)
+    if use_rerank and rag.reranker is not None:
+        try:
+            selected_docs, rerank_fallback_used = rag._rerank_documents(candidates, question)
+        except Exception:
+            selected_docs = candidates[: rag.settings.rerank_top_k]
+            rerank_fallback_used = True
     else:
         selected_docs = candidates[: rag.settings.rerank_top_k]
+        rerank_fallback_used = False
 
     answer, _sources = rag._answer_from_documents(question, selected_docs, history=None)
     contexts = [doc.page_content for doc in selected_docs]
-    return {"answer": answer, "contexts": contexts}
+    return {
+        "answer": answer,
+        "contexts": contexts,
+        "expanded_queries": queries,
+        "filters": effective_filters,
+        "candidate_count": len(candidates),
+        "rerank_fallback_used": rerank_fallback_used,
+        "selected_sources": [doc.metadata.get("source") for doc in selected_docs],
+        "selected_doc_ids": [doc.metadata.get("doc_id") for doc in selected_docs],
+        "selected_headings": [doc.metadata.get("heading") for doc in selected_docs],
+    }
 
 
-def build_ragas_dataset(rows: list[dict], rag: RagService, top_k: int | None) -> Dataset:
-    records: list[dict] = []
+def build_ragas_dataset(
+    rows: list[dict],
+    rag: RagService,
+    top_k: int | None,
+    *,
+    use_rerank: bool = True,
+) -> tuple[Dataset, list[dict]]:
+    ragas_records: list[dict] = []
+    diagnostics_records: list[dict] = []
     for row in rows:
-        prediction = collect_prediction(rag, row["question"], top_k)
-        records.append(
+        filters = dict(row.get("filters") or {})
+        if row.get("source"):
+            filters["source"] = row["source"]
+        if row.get("doc_id"):
+            filters["doc_id"] = row["doc_id"]
+        prediction = collect_prediction(rag, row["question"], top_k, filters=filters, use_rerank=use_rerank)
+        ragas_records.append(
             {
-                "id": row["id"],
                 "question": row["question"],
                 "ground_truth": row["ground_truth"],
                 "answer": prediction["answer"],
                 "contexts": prediction["contexts"],
             }
         )
-    return Dataset.from_list(records)
+        diagnostics_records.append(
+            {
+                "id": row["id"],
+                "expected_source": row.get("source"),
+                "expected_doc_id": row.get("doc_id"),
+                "question": row["question"],
+                "ground_truth": row["ground_truth"],
+                "filters": prediction["filters"],
+                "expanded_queries": prediction["expanded_queries"],
+                "candidate_count": prediction["candidate_count"],
+                "rerank_used": use_rerank,
+                "rerank_fallback_used": prediction["rerank_fallback_used"],
+                "selected_sources": prediction["selected_sources"],
+                "selected_doc_ids": prediction["selected_doc_ids"],
+                "selected_headings": prediction["selected_headings"],
+                "retrieved_contexts": prediction["contexts"],
+                "response": prediction["answer"],
+            }
+        )
+    return Dataset.from_list(ragas_records), diagnostics_records
 
 
 def _clean_float(value):
@@ -153,12 +211,13 @@ def run_ragas_evaluation(
     *,
     output_path: Path | str | None = DEFAULT_OUTPUT_PATH,
     top_k: int | None = None,
+    use_rerank: bool = True,
 ) -> dict:
     settings = get_settings()
     rag = RagService()
     dataset_file = Path(dataset_path)
     rows, total_rows = load_dataset(dataset_file, max_rows=settings.evaluation_max_rows)
-    dataset = build_ragas_dataset(rows, rag, top_k)
+    dataset, diagnostics_records = build_ragas_dataset(rows, rag, top_k, use_rerank=use_rerank)
     from ragas import evaluate
     from ragas.embeddings import LangchainEmbeddingsWrapper
     from ragas.metrics import answer_relevancy, context_precision, context_recall, faithfulness
@@ -185,7 +244,18 @@ def run_ragas_evaluation(
         llm=llm,
         embeddings=embeddings,
     )
-    records = _clean_records(result.to_pandas().to_dict(orient="records"))
+    metric_records = _clean_records(result.to_pandas().to_dict(orient="records"))
+    records: list[dict] = []
+    for diagnostics, metrics in zip(diagnostics_records, metric_records):
+        merged = dict(diagnostics)
+        metric_row = dict(metrics)
+        merged["user_input"] = str(metric_row.pop("user_input", diagnostics["question"]))
+        merged["retrieved_contexts"] = metric_row.pop("retrieved_contexts", diagnostics["retrieved_contexts"])
+        merged["response"] = metric_row.pop("response", diagnostics["response"])
+        merged["reference"] = metric_row.pop("reference", diagnostics["ground_truth"])
+        for key, value in metric_row.items():
+            merged[key] = value
+        records.append(merged)
 
     metric_names = ("faithfulness", "answer_relevancy", "context_precision", "context_recall")
     summary = {
@@ -194,20 +264,41 @@ def run_ragas_evaluation(
     }
 
     resolved_output_path = Path(output_path) if output_path is not None else None
-    if resolved_output_path is not None:
-        resolved_output_path.parent.mkdir(parents=True, exist_ok=True)
-        resolved_output_path.write_text(json.dumps(records, indent=2, ensure_ascii=True), encoding="utf-8")
-
-    return {
+    report = {
         "dataset_path": str(dataset_file),
         "output_path": str(resolved_output_path) if resolved_output_path is not None else None,
         "samples": len(records),
         "total_rows": total_rows,
         "max_rows": settings.evaluation_max_rows,
         "truncated": total_rows > len(records),
+        "use_rerank": use_rerank,
         "summary": summary,
         "results": records,
     }
+    if resolved_output_path is not None:
+        resolved_output_path.parent.mkdir(parents=True, exist_ok=True)
+        resolved_output_path.write_text(json.dumps(report, indent=2, ensure_ascii=True), encoding="utf-8")
+    return report
+
+
+def load_saved_ragas_report(path: Path | str = DEFAULT_OUTPUT_PATH) -> dict | None:
+    report_path = Path(path)
+    if not report_path.exists():
+        return None
+    payload = json.loads(report_path.read_text(encoding="utf-8"))
+    if isinstance(payload, list):
+        return {
+            "dataset_path": str(DEFAULT_DATASET_PATH),
+            "output_path": str(report_path),
+            "samples": len(payload),
+            "total_rows": len(payload),
+            "max_rows": get_settings().evaluation_max_rows,
+            "truncated": False,
+            "use_rerank": True,
+            "summary": {},
+            "results": payload,
+        }
+    return payload
 
 
 def main() -> None:
@@ -215,9 +306,10 @@ def main() -> None:
     parser.add_argument("--dataset", required=True, help="Path to a JSONL dataset with question and ground_truth.")
     parser.add_argument("--output", default="ragas_report.json", help="Path to write evaluation results as JSON.")
     parser.add_argument("--top-k", type=int, default=None, help="Optional retrieval top_k override.")
+    parser.add_argument("--no-rerank", action="store_true", help="Disable rerank during evaluation.")
     args = parser.parse_args()
 
-    report = run_ragas_evaluation(args.dataset, output_path=args.output, top_k=args.top_k)
+    report = run_ragas_evaluation(args.dataset, output_path=args.output, top_k=args.top_k, use_rerank=not args.no_rerank)
     print(json.dumps(report["summary"], indent=2))
     if report["output_path"]:
         print(f"Report written to: {report['output_path']}")

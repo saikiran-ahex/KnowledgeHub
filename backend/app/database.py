@@ -170,6 +170,13 @@ def get_all_admin_files():
             return [dict(row) for row in c.fetchall()]
 
 
+def get_admin_user_ids() -> list[int]:
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute('SELECT id FROM users WHERE is_admin = TRUE ORDER BY id ASC')
+            return [int(row['id']) for row in c.fetchall()]
+
+
 def get_admin_file_by_id(file_id: int):
     with get_db() as conn:
         with conn.cursor() as c:
@@ -321,3 +328,37 @@ def update_conversation_title(conversation_id: str, user_id: int, title: str):
                 (title, now, conversation_id, user_id),
             )
         conn.commit()
+
+
+def get_recent_chat_pairs(limit: int = 100):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute(
+                '''
+                SELECT
+                    um.id AS user_message_id,
+                    am.id AS assistant_message_id,
+                    c.id AS conversation_id,
+                    u.username,
+                    um.content AS question,
+                    am.content AS answer,
+                    am.created_at AS created_at
+                FROM conversation_messages um
+                JOIN LATERAL (
+                    SELECT id, content, created_at
+                    FROM conversation_messages
+                    WHERE conversation_id = um.conversation_id
+                      AND role = 'assistant'
+                      AND id > um.id
+                    ORDER BY id ASC
+                    LIMIT 1
+                ) am ON TRUE
+                JOIN conversations c ON c.id = um.conversation_id
+                JOIN users u ON u.id = c.user_id
+                WHERE um.role = 'user'
+                ORDER BY am.created_at DESC, am.id DESC
+                LIMIT %s
+                ''',
+                (limit,),
+            )
+            return [dict(row) for row in c.fetchall()]

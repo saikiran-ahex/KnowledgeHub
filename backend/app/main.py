@@ -1,3 +1,4 @@
+import base64
 from functools import lru_cache
 from datetime import datetime, timezone
 import json
@@ -10,6 +11,8 @@ from uuid import uuid4
 import psycopg
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
+import mimetypes
+from fastapi.responses import StreamingResponse
 
 from app.config import get_settings
 from app.logging_config import setup_logging
@@ -346,6 +349,7 @@ async def chat(
             filters = {}
 
     file_path = None
+    image_base64: str | None = None
     if file is not None and file.filename:
         ext = Path(file.filename).suffix.lower()
         if ext not in SUPPORTED_EXTENSIONS:
@@ -355,8 +359,7 @@ async def chat(
             )
         if ext in {'.png', '.jpg', '.jpeg', '.webp'} and image_model and image_model not in ALLOWED_ADHOC_IMAGE_MODELS:
             raise HTTPException(status_code=400, detail=f'Unsupported image model. Allowed: {sorted(ALLOWED_ADHOC_IMAGE_MODELS)}')
-        
-        print("image_model: ", image_model)
+
         payload = await file.read()
         max_bytes = settings.max_upload_size_mb * 1024 * 1024
         if len(payload) > max_bytes:
@@ -364,6 +367,8 @@ async def chat(
         file_path = settings.upload_dir / f'chat_{file.filename}'
         file_path.write_bytes(payload)
         logger.info('Chat received ad-hoc file path=%s bytes=%s', file_path, len(payload))
+        if ext in {'.png', '.jpg', '.jpeg', '.webp'}:
+            image_base64 = base64.b64encode(payload).decode('utf-8')
 
     if conversation_id:
         conversation = database.get_conversation(conversation_id, current_user['user_id'])
@@ -383,11 +388,11 @@ async def chat(
         owner_ids=_shared_library_owner_ids(),
     )
 
-    user_message_content = f'{question} (file: {file.filename})' if file is not None and file.filename else question
+    user_message_content = question
     message_count = database.count_conversation_messages(conversation_id)
     if message_count == 0:
         database.update_conversation_title(conversation_id, current_user['user_id'], question[:30])
-    database.append_conversation_message(conversation_id, 'user', user_message_content, [])
+    database.append_conversation_message(conversation_id, 'user', user_message_content, [], image_base64)
     database.append_conversation_message(conversation_id, 'assistant', answer, sources)
 
     elapsed_ms = int((perf_counter() - start) * 1000)
@@ -414,15 +419,39 @@ def delete_conversation(conversation_id: str, current_user: dict = Depends(get_c
         raise HTTPException(status_code=404, detail='Conversation not found')
     return DeleteConversationResponse(success=True, message='Conversation deleted successfully')
 
-
 @app.get('/files', response_model=list[FileRecord])
 def get_files(current_user: dict = Depends(get_admin_user)) -> list[FileRecord]:
     files = database.get_all_admin_files()
     records = []
     for f in files:
         p = Path(f['file_path'])
-        records.append(FileRecord(**f, file_size=p.stat().st_size if p.exists() else None))
+        records.append(FileRecord(
+            **{k: v for k, v in f.items() if k != 'file_path'},
+            download_url=f'/files/download/{f["id"]}',
+            file_size=p.stat().st_size if p.exists() else None,
+        ))
     return records
+
+
+@app.get('/files/download/{file_id}')
+def download_file(file_id: int, current_user: dict = Depends(get_admin_user)) -> StreamingResponse:
+    file_record = database.get_admin_file_by_id(file_id)
+    if not file_record:
+        raise HTTPException(status_code=404, detail='File not found')
+    file_path = Path(file_record['file_path']).resolve()
+    upload_dir = settings.upload_dir.resolve()
+    if not file_path.is_relative_to(upload_dir):
+        raise HTTPException(status_code=400, detail='Invalid file path')
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail='File not found on disk')
+    mime_type, _ = mimetypes.guess_type(file_record['filename'])
+    mime_type = mime_type or 'application/octet-stream'
+    filename = file_record['filename']
+    return StreamingResponse(
+        content=file_path.open('rb'),
+        media_type=mime_type,
+        headers={'Content-Disposition': f'attachment; filename="{filename}"'},
+    )
 
 
 @app.post('/files/cleanup-vectors', response_model=CleanupVectorsResponse)

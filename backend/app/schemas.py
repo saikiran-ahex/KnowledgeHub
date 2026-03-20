@@ -10,6 +10,7 @@ class StoredChatTurn(ChatTurn):
     id: int
     sources: list[dict] = []
     created_at: str
+    image_base64: str | None = None
 
 
 class RetrievalFilters(BaseModel):
@@ -84,7 +85,7 @@ class FileRecord(BaseModel):
     file_type: str
     chunks_indexed: int
     uploaded_at: str
-    file_path: str | None = None
+    download_url: str | None = None
     file_size: int | None = None
 
 

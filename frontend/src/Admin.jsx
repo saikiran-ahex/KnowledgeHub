@@ -32,6 +32,7 @@ export default function Admin() {
   const [importBusy, setImportBusy] = useState(false);
   const [evaluationDatasetPath, setEvaluationDatasetPath] = useState('eval/sample_ragas_eval.jsonl');
   const [evaluationResult, setEvaluationResult] = useState(null);
+  const [selectedFiles, setSelectedFiles] = useState([]);
 
   useEffect(() => {
     if (token && isAdmin) {
@@ -110,64 +111,62 @@ export default function Admin() {
     }
   }
 
-  async function handleUpload(e) {
-    const selectedFiles = Array.from(e.target.files || []);
+  async function handleUpload() {
     if (selectedFiles.length === 0) return;
 
     setUploading(true);
     setUploadResults([]);
+
     try {
       const results = [];
-      for (let i = 0; i < selectedFiles.length; i++) {
-        const file = selectedFiles[i];
+
+      for (let file of selectedFiles) {
         try {
           const fd = new FormData();
           fd.append('file', file);
+
           const res = await fetch(`${API_BASE}/upload`, {
             method: 'POST',
             headers: { Authorization: `Bearer ${token}` },
             body: fd,
           });
+
           const data = await readApiResponse(res);
           if (!res.ok) throw new Error(data.detail || 'Upload failed');
+
           results.push({ ...data, error: null });
         } catch (err) {
-          results.push({ filename: file.name, error: String(err.message || err), chunks_indexed: 0 });
+          results.push({
+            filename: file.name,
+            error: String(err.message || err),
+          });
         }
       }
+
       setUploadResults(results);
       await loadFiles();
+
     } catch (err) {
-      setUploadResults([{ filename: 'error', error: String(err.message || err), chunks_indexed: 0 }]);
+      setUploadResults([
+        { filename: 'error', error: String(err.message || err) },
+      ]);
     } finally {
       setUploading(false);
-      setUploadOpen(false);
-      e.target.value = '';
     }
   }
 
-  async function handleDownload(fileId) {
-    try {
-      const res = await fetch(`${API_BASE}/files/download/${fileId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) {
-        const data = await readApiResponse(res);
-        throw new Error(data.detail || 'Download failed');
-      }
-      const disposition = res.headers.get('content-disposition') || '';
-      const match = disposition.match(/filename="?([^"]+)"?/);
-      const filename = match ? match[1] : `file-${fileId}`;
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      showNotification(`Error: ${err.message || err}`, 'error');
+
+
+  function formatFileSize(bytes) {
+    if (!bytes) return '0 KB';
+
+    const kb = bytes / 1024;
+    const mb = kb / 1024;
+
+    if (mb >= 1) {
+      return `${mb.toFixed(2)} MB`;
     }
+    return `${kb.toFixed(2)} KB`;
   }
 
   async function handleDelete(fileId) {
@@ -263,6 +262,35 @@ export default function Admin() {
     } finally {
       setImportBusy(false);
     }
+  }
+  async function handleDownload(fileId) {
+    try {
+      const res = await fetch(`${API_BASE}/files/download/${fileId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const data = await readApiResponse(res);
+        throw new Error(data.detail || 'Download failed');
+      }
+      const disposition = res.headers.get('content-disposition') || '';
+      const match = disposition.match(/filename="?([^"]+)"?/);
+      const filename = match ? match[1] : `file-${fileId}`;
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      showNotification(`Error: ${err.message || err}`, 'error');
+    }
+  }
+
+  function removeFile(indexToRemove) {
+    setSelectedFiles((prev) =>
+      prev.filter((_, index) => index !== indexToRemove)
+    );
   }
 
   if (!token || !isAdmin) {
@@ -408,7 +436,11 @@ export default function Admin() {
               <div className="plusWrapper">
                 <button
                   className="plusBtn"
-                  onClick={() => setUploadOpen(true)}
+                  onClick={() => {
+                    setUploadResults([]);
+                    setSelectedFiles([]);
+                    setUploadOpen(true);
+                  }}
                 >
                   +
                 </button>
@@ -418,31 +450,76 @@ export default function Admin() {
             </div>
             {uploadOpen && (
               <div className="uploadModal">
-
                 <div className="uploadModalCard">
                   <h2>Upload Files</h2>
                   <p>Upload files that all users can search and chat with</p>
+                  <div className="uploadSection">
+                    <label className={`uploadBtn ${uploading ? 'disabled' : ''}`}>
+                      Choose Files
+                      <input
+                        type="file"
+                        multiple
+                        accept={SUPPORTED}
+                        disabled={uploading}
+                        onChange={(e) => {
+                          const files = Array.from(e.target.files || []);
+                          setSelectedFiles((prev) => [...prev, ...files]);
+                        }}
+                        style={{ display: "none" }}
+                      />
+                    </label>
 
-                  <label className="uploadBtn">
-                    Choose Files
-                    <input
-                      type="file"
-                      multiple
-                      accept={SUPPORTED}
-                      onChange={handleUpload}
-                      style={{ display: "none" }}
-                    />
-                  </label>
+                    {selectedFiles.length > 0 && (
+                      <div className="uploadFileList">
+                        {selectedFiles.map((file, index) => (
+                          <div key={index} className="uploadFileItem">
+                            <span>📄 {file.name}</span>
 
+                            <button
+                              className="removeFileBtn"
+                              onClick={() => removeFile(index)}
+                              disabled={uploading}
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {uploadResults.length > 0 && (
+                      <div className="uploadResults">
+                        <h4>Results:</h4>
+                        {uploadResults.map((res, index) => (
+                          <div key={index} className={res.error ? 'error' : 'success'}>
+                            {res.filename} → {res.error ? `❌ ${res.error}` : '✅ Uploaded'}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {selectedFiles.length > 0 && (
+                      <button
+                        className="uploadSubmitBtn"
+                        disabled={uploading}
+                        onClick={handleUpload}
+                      >
+                        {uploading ? "Uploading..." : "Upload Files"}
+                      </button>
+                    )}
+                  </div>
                   <button
                     className="closeBtn"
-                    onClick={() => setUploadOpen(false)}
+                    onClick={() => {
+                      if (!uploading) {
+                        setUploadOpen(false);
+                        setUploadResults([]);
+                        setSelectedFiles([]);
+                      }
+                    }} disabled={uploading}
                   >
                     ✕
                   </button>
-
                 </div>
-
               </div>
             )}
             <button onClick={handleCleanup} className="cleanupBtn">Sync Library</button>
@@ -467,11 +544,8 @@ export default function Admin() {
                   {currentFiles.map((file) => (
                     <tr key={file.id}>
                       <td>📄 {file.filename}</td>
-
                       <td>{file.file_type}</td>
-
-                      <td>{file.chunks_indexed}</td>
-
+                      <td>{formatFileSize(file.file_size)}</td>
                       <td>
                         <button
                           className="tableBtn"
@@ -480,7 +554,6 @@ export default function Admin() {
                           Download
                         </button>
                       </td>
-
                       <td>
                         <button
                           className="deleteFileBtn"

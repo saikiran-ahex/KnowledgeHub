@@ -11,7 +11,8 @@ from uuid import uuid4
 import psycopg
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+import mimetypes
+from fastapi.responses import StreamingResponse
 
 from app.config import get_settings
 from app.logging_config import setup_logging
@@ -418,7 +419,6 @@ def delete_conversation(conversation_id: str, current_user: dict = Depends(get_c
         raise HTTPException(status_code=404, detail='Conversation not found')
     return DeleteConversationResponse(success=True, message='Conversation deleted successfully')
 
-
 @app.get('/files', response_model=list[FileRecord])
 def get_files(current_user: dict = Depends(get_admin_user)) -> list[FileRecord]:
     files = database.get_all_admin_files()
@@ -434,20 +434,23 @@ def get_files(current_user: dict = Depends(get_admin_user)) -> list[FileRecord]:
 
 
 @app.get('/files/download/{file_id}')
-def download_file(file_id: int, current_user: dict = Depends(get_admin_user)) -> FileResponse:
+def download_file(file_id: int, current_user: dict = Depends(get_admin_user)) -> StreamingResponse:
     file_record = database.get_admin_file_by_id(file_id)
     if not file_record:
         raise HTTPException(status_code=404, detail='File not found')
     file_path = Path(file_record['file_path']).resolve()
     upload_dir = settings.upload_dir.resolve()
-    if not str(file_path).startswith(str(upload_dir)):
+    if not file_path.is_relative_to(upload_dir):
         raise HTTPException(status_code=400, detail='Invalid file path')
     if not file_path.exists():
         raise HTTPException(status_code=404, detail='File not found on disk')
-    return FileResponse(
-        path=str(file_path),
-        filename=file_record['filename'],
-        media_type='application/octet-stream',
+    mime_type, _ = mimetypes.guess_type(file_record['filename'])
+    mime_type = mime_type or 'application/octet-stream'
+    filename = file_record['filename']
+    return StreamingResponse(
+        content=file_path.open('rb'),
+        media_type=mime_type,
+        headers={'Content-Disposition': f'attachment; filename="{filename}"'},
     )
 
 

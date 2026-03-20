@@ -535,6 +535,7 @@ class RagService:
 
         system_msg = (
             'You are a helpful assistant with access to a document knowledge base. '
+            'if user greets you, greet them back.'
             'If context is provided, use it to answer. '
             'If no context is provided, answer conversationally from your general knowledge or the conversation history.'
         )

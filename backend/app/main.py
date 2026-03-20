@@ -10,6 +10,7 @@ from uuid import uuid4
 import psycopg
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.config import get_settings
 from app.logging_config import setup_logging
@@ -37,6 +38,8 @@ app.add_middleware(
     allow_methods=['*'],
     allow_headers=['*'],
 )
+
+app.mount('/uploads', StaticFiles(directory=str(settings.upload_dir)), name='uploads')
 
 
 _TRIVIAL_CHAT_PATTERNS = {
@@ -421,7 +424,12 @@ def get_files(current_user: dict = Depends(get_admin_user)) -> list[FileRecord]:
     records = []
     for f in files:
         p = Path(f['file_path'])
-        records.append(FileRecord(**f, file_size=p.stat().st_size if p.exists() else None))
+        relative = p.relative_to(settings.upload_dir)
+        records.append(FileRecord(
+            **{k: v for k, v in f.items() if k != 'file_path'},
+            download_url=f'/uploads/{relative.as_posix()}',
+            file_size=p.stat().st_size if p.exists() else None,
+        ))
     return records
 
 

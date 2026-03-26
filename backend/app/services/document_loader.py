@@ -1,4 +1,5 @@
 import logging
+import mimetypes
 from pathlib import Path
 
 import pandas as pd
@@ -22,6 +23,13 @@ SUPPORTED_EXTENSIONS = {
 }
 
 IMAGE_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.webp'}
+
+
+def _image_suffix_from_content_type(content_type: str | None) -> str:
+    guessed = mimetypes.guess_extension(content_type or '')
+    if guessed in IMAGE_EXTENSIONS:
+        return guessed
+    return '.png'
 
 
 def load_document(file_path: Path) -> str:
@@ -63,3 +71,48 @@ def load_document(file_path: Path) -> str:
         return text
 
     return ''
+
+
+def extract_document_images(file_path: Path, output_dir: Path) -> list[dict]:
+    ext = file_path.suffix.lower()
+    extracted: list[dict] = []
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    if ext == '.pdf':
+        reader = PdfReader(str(file_path))
+        for page_no, page in enumerate(reader.pages, start=1):
+            page_images = list(getattr(page, 'images', []) or [])
+            for index, image in enumerate(page_images, start=1):
+                suffix = Path(getattr(image, 'name', '')).suffix.lower() or '.png'
+                if suffix not in IMAGE_EXTENSIONS:
+                    suffix = '.png'
+                image_path = output_dir / f'{file_path.stem}_page_{page_no}_image_{index}{suffix}'
+                image_path.write_bytes(image.data)
+                extracted.append({'path': image_path, 'page_no': page_no})
+        logger.info('Extracted pdf images file=%s images=%s', file_path.name, len(extracted))
+        return extracted
+
+    if ext == '.docx':
+        doc = DocxDocument(str(file_path))
+        seen_partnames: set[str] = set()
+        image_index = 0
+        for rel in doc.part.rels.values():
+            target_part = getattr(rel, 'target_part', None)
+            if target_part is None:
+                continue
+            content_type = getattr(target_part, 'content_type', '') or ''
+            if not content_type.startswith('image/'):
+                continue
+            partname = str(getattr(target_part, 'partname', ''))
+            if partname in seen_partnames:
+                continue
+            seen_partnames.add(partname)
+            image_index += 1
+            suffix = _image_suffix_from_content_type(content_type)
+            image_path = output_dir / f'{file_path.stem}_image_{image_index}{suffix}'
+            image_path.write_bytes(target_part.blob)
+            extracted.append({'path': image_path, 'page_no': None})
+        logger.info('Extracted docx images file=%s images=%s', file_path.name, len(extracted))
+        return extracted
+
+    return extracted

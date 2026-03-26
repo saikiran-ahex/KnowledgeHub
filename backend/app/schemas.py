@@ -11,6 +11,8 @@ class StoredChatTurn(ChatTurn):
     sources: list[dict] = []
     created_at: str
     image_base64: str | None = None
+    ragas_score: float | None = None
+    judge_score: float | None = None
 
 
 class RetrievalFilters(BaseModel):
@@ -43,6 +45,8 @@ class ChatResponse(BaseModel):
     answer: str
     sources: list[dict]
     conversation_id: str
+    assistant_message_id: int | None = None
+    evaluation_scores: dict[str, float | None] = {}
 
 
 class UploadResponse(BaseModel):
@@ -75,6 +79,7 @@ class AuthResponse(BaseModel):
     token_type: str = 'bearer'
     user_id: int
     username: str
+    role: str = 'user'
     is_admin: bool = False
 
 
@@ -85,6 +90,7 @@ class FileRecord(BaseModel):
     file_type: str
     chunks_indexed: int
     uploaded_at: str
+    is_global: bool = True
     download_url: str | None = None
     file_size: int | None = None
 
@@ -155,3 +161,33 @@ class DeleteConversationResponse(BaseModel):
 class AdminSettingsResponse(BaseModel):
     chatModel: str = 'gpt-4o-mini'
     imageModel: str = 'gpt-4o-mini'
+
+
+class FeedbackRequest(BaseModel):
+    message_id: int
+    feedback_result: bool
+    comment: str | None = None
+    chunks_used: list[str] = []
+    knowledge_gap_flag: bool = False
+
+
+class FeedbackResponse(BaseModel):
+    success: bool
+    feedback_id: int | None = None
+
+
+class HumanReviewQueueItem(BaseModel):
+    id: int
+    message_id: int
+    reason: str
+    reviewed: bool
+    created_at: str
+    question: str | None = None
+    answer: str
+    ragas_score: float | None = None
+    judge_score: float | None = None
+    conversation_id: str
+
+
+class MarkReviewResponse(BaseModel):
+    success: bool

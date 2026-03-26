@@ -35,7 +35,6 @@ class Settings(BaseSettings):
     qdrant_image_collection: str = 'rag_image_chunks'
 
     retrieval_top_k: int = 12
-    image_retrieval_top_k: int = 8
     rerank_top_k: int = 4
     query_expansion_count: int = 2
     retrieval_min_score: float = 0.15
@@ -53,7 +52,6 @@ class Settings(BaseSettings):
     openrouter_base_url: str = Field(default='https://openrouter.ai/api/v1')
     openrouter_model: str = Field(default='nvidia/nemotron-nano-12b-v2-vl:free')
 
-    clip_model_name: str = Field(default='clip-ViT-B-32')
     adhoc_image_models: tuple[str, ...] = ('gpt-5-mini', 'gpt-4.1-mini', 'nemotron-nano')
 
     cohere_api_key: str = Field(default='')

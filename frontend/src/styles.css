@@ -854,6 +854,42 @@ textarea::placeholder {
   box-shadow: var(--shadow-sm);
 }
 
+.messageMetrics {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.metricChip {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-secondary);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.feedbackBar {
+  display: flex;
+  gap: 8px;
+}
+
+.feedbackBtn {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-secondary);
+  border-radius: 10px;
+  padding: 6px 10px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.feedbackBtn:hover {
+  background: var(--bg-tertiary);
+  transform: translateY(-1px);
+}
+
 .indexPage {
   flex: 1;
   display: flex;
@@ -1565,6 +1601,62 @@ textarea::placeholder {
   color: var(--text-primary);
   font-size: 24px;
   font-weight: 700;
+}
+
+.reviewQueueList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.reviewQueueCard {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-secondary);
+  border-radius: 14px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.reviewQueueHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.reviewReason {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.reviewStatus {
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  border: 1px solid var(--border-secondary);
+}
+
+.reviewStatus.pending {
+  color: var(--text-error);
+  border-color: var(--text-error);
+}
+
+.reviewStatus.done {
+  color: var(--text-success);
+  border-color: var(--text-success);
+}
+
+.reviewBlock {
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.reviewMetrics {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .emptyText {

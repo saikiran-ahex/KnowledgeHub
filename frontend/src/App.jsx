@@ -43,7 +43,38 @@ function Sources({ sources }) {
   );
 }
 
-function ChatMessage({ role, content, sources, filePreviewUrl, fileName, image_base64 }) {
+function FeedbackBar({ messageId, onSubmit }) {
+  if (!messageId) return null;
+  return (
+    <div className="feedbackBar">
+      <button className="feedbackBtn" onClick={() => onSubmit(messageId, true)} title="Helpful">
+        👍
+      </button>
+      <button className="feedbackBtn" onClick={() => onSubmit(messageId, false)} title="Not helpful">
+        👎
+      </button>
+    </div>
+  );
+}
+
+function EvaluationSummary({ ragasScore, judgeScore, evaluationScores }) {
+  const items = [
+    ['Self', evaluationScores?.overall ?? ragasScore],
+    ['Judge', evaluationScores?.judge_score ?? judgeScore],
+  ].filter(([, value]) => value != null);
+  if (!items.length) return null;
+  return (
+    <div className="messageMetrics">
+      {items.map(([label, value]) => (
+        <span key={label} className="metricChip">
+          {label}: {(Number(value) * 100).toFixed(0)}%
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function ChatMessage({ role, content, sources, filePreviewUrl, fileName, image_base64, messageId, ragas_score, judge_score, evaluation_scores, onFeedback }) {
   const imgSrc = image_base64
     ? `data:image/jpeg;base64,${image_base64}`
     : filePreviewUrl;
@@ -67,7 +98,17 @@ function ChatMessage({ role, content, sources, filePreviewUrl, fileName, image_b
             <p style={{ margin: 0 }}>{content}</p>
           </div>
         )}
-        {role === 'assistant' ? <Sources sources={sources} /> : null}
+        {role === 'assistant' ? (
+          <>
+            <EvaluationSummary
+              ragasScore={ragas_score}
+              judgeScore={judge_score}
+              evaluationScores={evaluation_scores}
+            />
+            <Sources sources={sources} />
+            <FeedbackBar messageId={messageId} onSubmit={onFeedback} />
+          </>
+        ) : null}
       </div>
     </div>
   );
@@ -443,7 +484,16 @@ function ChatApp() {
               id: data.conversation_id || c.id,
               isDraft: false,
               title: c.title === 'New Chat' ? q.slice(0, 30) : c.title,
-              messages: [...c.messages, { role: 'assistant', content: data.answer, sources: data.sources || [] }],
+              messages: [...c.messages, {
+                id: data.assistant_message_id,
+                role: 'assistant',
+                content: data.answer,
+                sources: data.sources || [],
+                ragas_score: data.evaluation_scores?.overall ?? null,
+                judge_score: data.evaluation_scores?.judge_score ?? null,
+                evaluation_scores: data.evaluation_scores || {},
+                created_at: new Date().toISOString(),
+              }],
             }
             : c
         )
@@ -458,6 +508,27 @@ function ChatApp() {
       );
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function submitFeedback(messageId, feedbackResult) {
+    try {
+      const res = await fetch(`${API_BASE}/feedback`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message_id: messageId,
+          feedback_result: feedbackResult,
+          knowledge_gap_flag: !feedbackResult,
+        }),
+      });
+      const data = await readApiResponse(res);
+      if (!res.ok) throw new Error(data.detail || 'Failed to submit feedback');
+    } catch (err) {
+      console.error('Failed to submit feedback:', err);
     }
   }
 
@@ -616,7 +687,22 @@ function ChatApp() {
             </div>
           ) : null}
 
-          {history.map((m, i) => <ChatMessage key={i} role={m.role} content={m.content} sources={m.sources} filePreviewUrl={m.filePreviewUrl} fileName={m.fileName} image_base64={m.image_base64} />)}
+          {history.map((m, i) => (
+            <ChatMessage
+              key={m.id || i}
+              role={m.role}
+              content={m.content}
+              sources={m.sources}
+              filePreviewUrl={m.filePreviewUrl}
+              fileName={m.fileName}
+              image_base64={m.image_base64}
+              messageId={m.id}
+              ragas_score={m.ragas_score}
+              judge_score={m.judge_score}
+              evaluation_scores={m.evaluation_scores}
+              onFeedback={submitFeedback}
+            />
+          ))}
           {busy && (
             <div className="msg assistant">
               <div className="botName">Zill</div>

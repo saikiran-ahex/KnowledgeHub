@@ -22,6 +22,7 @@ from app.schemas import (
     ConversationRecord, CreateConversationResponse, DeleteConversationResponse, CleanupVectorsResponse,
     ImageModelOption, RunEvaluationRequest, RunEvaluationResponse,
     ImportChatsToEvaluationRequest, ImportChatsToEvaluationResponse, AdminSettingsResponse,
+    FeedbackRequest, FeedbackResponse, HumanReviewQueueItem, MarkReviewResponse,
 )
 from app.services.document_loader import SUPPORTED_EXTENSIONS
 from app import database, auth
@@ -94,6 +95,14 @@ def get_rag_service():
     return RagService()
 
 
+@lru_cache(maxsize=1)
+def get_query_graph_service():
+    from app.services.query_graph import QueryGraphService
+
+    logger.info('Initializing QueryGraphService')
+    return QueryGraphService(get_rag_service())
+
+
 @app.on_event('startup')
 def warmup_on_startup() -> None:
     start = perf_counter()
@@ -106,6 +115,7 @@ def warmup_on_startup() -> None:
     else:
         logger.warning('ADMIN_PASSWORD is not set; admin bootstrap skipped')
     get_rag_service()
+    get_query_graph_service()
     elapsed_ms = int((perf_counter() - start) * 1000)
     logger.info('Startup warmup completed elapsed_ms=%s', elapsed_ms)
 
@@ -130,14 +140,15 @@ def get_current_user(authorization: str = Header(None)):
         raise HTTPException(status_code=401, detail='Invalid token')
     user_id = payload.get('user_id')
     username = payload.get('username')
-    is_admin = payload.get('is_admin', False)
+    role = payload.get('role') or ('admin' if payload.get('is_admin', False) else 'user')
+    is_admin = role == 'admin' or payload.get('is_admin', False)
     if not user_id or not username:
         raise HTTPException(status_code=401, detail='Invalid token payload')
-    return {'user_id': user_id, 'username': username, 'is_admin': is_admin}
+    return {'user_id': user_id, 'username': username, 'role': role, 'is_admin': is_admin}
 
 
 def get_admin_user(current_user: dict = Depends(get_current_user)):
-    if not current_user.get('is_admin'):
+    if current_user.get('role') != 'admin' and not current_user.get('is_admin'):
         raise HTTPException(status_code=403, detail='Admin access required')
     return current_user
 
@@ -148,11 +159,12 @@ def register(req: RegisterRequest) -> AuthResponse:
     if existing:
         raise HTTPException(status_code=400, detail='Username already exists')
     password_hash = auth.hash_password(req.password)
-    user_id = database.create_user(req.username, password_hash, False)
+    role = 'user'
     is_admin = False
-    token = auth.create_access_token({'user_id': user_id, 'username': req.username, 'is_admin': is_admin})
-    logger.info('User registered user_id=%s username=%s is_admin=%s', user_id, req.username, is_admin)
-    return AuthResponse(access_token=token, user_id=user_id, username=req.username, is_admin=is_admin)
+    user_id = database.create_user(req.username, password_hash, is_admin, role=role)
+    token = auth.create_access_token({'user_id': user_id, 'username': req.username, 'role': role, 'is_admin': is_admin})
+    logger.info('User registered user_id=%s username=%s role=%s is_admin=%s', user_id, req.username, role, is_admin)
+    return AuthResponse(access_token=token, user_id=user_id, username=req.username, role=role, is_admin=is_admin)
 
 
 @app.post('/login', response_model=AuthResponse)
@@ -160,10 +172,11 @@ def login(req: LoginRequest) -> AuthResponse:
     user = database.get_user_by_username(req.username)
     if not user or not auth.verify_password(req.password, user['password_hash']):
         raise HTTPException(status_code=401, detail='Invalid credentials')
-    is_admin = user.get('is_admin', False)
-    token = auth.create_access_token({'user_id': user['id'], 'username': user['username'], 'is_admin': is_admin})
-    logger.info('User logged in user_id=%s username=%s is_admin=%s', user['id'], user['username'], is_admin)
-    return AuthResponse(access_token=token, user_id=user['id'], username=user['username'], is_admin=is_admin)
+    role = user.get('role') or ('admin' if user.get('is_admin', False) else 'user')
+    is_admin = role == 'admin' or user.get('is_admin', False)
+    token = auth.create_access_token({'user_id': user['id'], 'username': user['username'], 'role': role, 'is_admin': is_admin})
+    logger.info('User logged in user_id=%s username=%s role=%s is_admin=%s', user['id'], user['username'], role, is_admin)
+    return AuthResponse(access_token=token, user_id=user['id'], username=user['username'], role=role, is_admin=is_admin)
 
 
 @app.post('/upload', response_model=UploadResponse)
@@ -192,17 +205,17 @@ async def upload(
         raise HTTPException(status_code=413, detail='File too large.')
 
     content_hash = database.sha256_bytes(payload)
-    existing_file = database.get_user_file_by_content_hash(current_user['user_id'], content_hash)
+    existing_file = database.get_file_by_content_hash(content_hash)
     if existing_file:
         logger.info(
-            'Upload rejected: duplicate content filename=%s existing_doc_id=%s user_id=%s',
+            'Upload rejected: duplicate content filename=%s existing_doc_id=%s current_user_id=%s',
             file.filename,
             existing_file['doc_id'],
             current_user['user_id'],
         )
         raise HTTPException(
             status_code=409,
-            detail=f"You already uploaded this file as '{existing_file['filename']}'. Delete it first if you want to re-upload.",
+            detail=f"That file already exists in the shared library as '{existing_file['filename']}'. Delete it first if you want to re-upload.",
         )
 
     resolved_doc_id = uuid4().hex
@@ -223,7 +236,11 @@ async def upload(
         'content_hash': content_hash,
         'page_no': None,
     }
-    indexed = get_rag_service().ingest_file(output_path, metadata=metadata, raw_bytes=payload)
+    rag_service = get_rag_service()
+    domain, description = rag_service.profile_document(output_path)
+    metadata['domain'] = domain
+    metadata['description'] = description
+    indexed = rag_service.ingest_file(output_path, metadata=metadata, raw_bytes=payload)
     try:
         database.create_file_record(
             user_id=current_user['user_id'],
@@ -234,14 +251,15 @@ async def upload(
             chunks=indexed,
             content_hash=content_hash,
         )
+        database.create_document_record(resolved_doc_id, domain, description or f'Indexed document: {file.filename}')
     except psycopg.IntegrityError:
-        get_rag_service().delete_by_doc_id(resolved_doc_id)
+        rag_service.delete_by_doc_id(resolved_doc_id)
         if output_path.exists():
             output_path.unlink()
-        existing_file = database.get_user_file_by_content_hash(current_user['user_id'], content_hash)
+        existing_file = database.get_file_by_content_hash(content_hash)
         raise HTTPException(
             status_code=409,
-            detail=f"You already uploaded this file as '{existing_file['filename'] if existing_file else file.filename}'. Delete it first if you want to re-upload.",
+            detail=f"That file already exists in the shared library as '{existing_file['filename'] if existing_file else file.filename}'. Delete it first if you want to re-upload.",
         )
     elapsed_ms = int((perf_counter() - start) * 1000)
     logger.info('Upload indexed filename=%s chunks=%s elapsed_ms=%s', file.filename, indexed, elapsed_ms)
@@ -253,7 +271,7 @@ def ask(req: AskRequest, current_user: dict = Depends(get_current_user)) -> AskR
     start = perf_counter()
     logger.info('Ask requested question_len=%s top_k=%s history_turns=%s user_id=%s', len(req.question), req.top_k, len(req.history), current_user['user_id'])
     filters = req.filters.model_dump(exclude_none=True) if req.filters else {}
-    answer, sources = get_rag_service().ask(
+    result = get_query_graph_service().run(
         req.question,
         top_k=req.top_k,
         history=req.history,
@@ -261,8 +279,8 @@ def ask(req: AskRequest, current_user: dict = Depends(get_current_user)) -> AskR
         owner_ids=_shared_library_owner_ids(),
     )
     elapsed_ms = int((perf_counter() - start) * 1000)
-    logger.info('Ask completed sources=%s elapsed_ms=%s', len(sources), elapsed_ms)
-    return AskResponse(answer=answer, sources=sources)
+    logger.info('Ask completed sources=%s elapsed_ms=%s', len(result.get('sources', [])), elapsed_ms)
+    return AskResponse(answer=result.get('answer', ''), sources=result.get('sources', []))
 
 
 @app.post('/ask-with-file', response_model=AskWithFileResponse)
@@ -378,26 +396,58 @@ async def chat(
         conversation = database.create_conversation(current_user['user_id'])
         conversation_id = conversation['id']
 
-    answer, sources = get_rag_service().chat(
-        question=question,
-        image_model=image_model,
-        top_k=top_k,
-        history=history,
-        file_path=file_path,
-        filters=filters,
-        owner_ids=_shared_library_owner_ids(),
-    )
+    if file_path is not None:
+        answer, sources = get_rag_service().chat(
+            question=question,
+            image_model=image_model,
+            top_k=top_k,
+            history=history,
+            file_path=file_path,
+            filters=filters,
+            owner_ids=_shared_library_owner_ids(),
+        )
+        evaluation_scores = {}
+        review_flag = False
+        review_reason = None
+    else:
+        result = get_query_graph_service().run(
+            question,
+            top_k=top_k,
+            history=history,
+            filters=filters,
+            owner_ids=_shared_library_owner_ids(),
+        )
+        answer = result.get('answer', '')
+        sources = result.get('sources', [])
+        evaluation_scores = result.get('evaluation_scores', {}) or {}
+        review_flag = bool(result.get('review_flag'))
+        review_reason = result.get('review_reason')
 
     user_message_content = question
     message_count = database.count_conversation_messages(conversation_id)
     if message_count == 0:
         database.update_conversation_title(conversation_id, current_user['user_id'], question[:30])
     database.append_conversation_message(conversation_id, 'user', user_message_content, [], image_base64)
-    database.append_conversation_message(conversation_id, 'assistant', answer, sources)
+    assistant_message_id = database.append_conversation_message(
+        conversation_id,
+        'assistant',
+        answer,
+        sources,
+        ragas_score=evaluation_scores.get('overall'),
+        judge_score=evaluation_scores.get('judge_score'),
+    )
+    if review_flag:
+        database.enqueue_human_review(assistant_message_id, str(review_reason or 'Flagged by query graph evaluation'))
 
     elapsed_ms = int((perf_counter() - start) * 1000)
     logger.info('Chat completed sources=%s elapsed_ms=%s', len(sources), elapsed_ms)
-    return ChatResponse(answer=answer, sources=sources, conversation_id=conversation_id)
+    return ChatResponse(
+        answer=answer,
+        sources=sources,
+        conversation_id=conversation_id,
+        assistant_message_id=assistant_message_id,
+        evaluation_scores=evaluation_scores,
+    )
 
 
 @app.get('/conversations', response_model=list[ConversationRecord])
@@ -420,14 +470,15 @@ def delete_conversation(conversation_id: str, current_user: dict = Depends(get_c
     return DeleteConversationResponse(success=True, message='Conversation deleted successfully')
 
 @app.get('/files', response_model=list[FileRecord])
-def get_files(current_user: dict = Depends(get_admin_user)) -> list[FileRecord]:
+def get_files(current_user: dict = Depends(get_current_user)) -> list[FileRecord]:
     files = database.get_all_admin_files()
     records = []
     for f in files:
         p = Path(f['file_path'])
         records.append(FileRecord(
-            **{k: v for k, v in f.items() if k != 'file_path'},
+            **{k: v for k, v in f.items() if k not in {'file_path', 'is_global'}},
             download_url=f'/files/download/{f["id"]}',
+            is_global=bool(f.get('is_global', True)),
             file_size=p.stat().st_size if p.exists() else None,
         ))
     return records
@@ -615,6 +666,32 @@ def get_admin_settings(current_user: dict = Depends(get_admin_user)) -> AdminSet
 def save_admin_settings(req: AdminSettingsResponse, current_user: dict = Depends(get_admin_user)) -> AdminSettingsResponse:
     database.save_admin_settings(req.model_dump())
     return req
+
+
+@app.post('/feedback', response_model=FeedbackResponse)
+def submit_feedback(req: FeedbackRequest, current_user: dict = Depends(get_current_user)) -> FeedbackResponse:
+    feedback_id = database.create_feedback(
+        message_id=req.message_id,
+        feedback_result=req.feedback_result,
+        chunks_used=req.chunks_used,
+        comment=req.comment,
+        knowledge_gap_flag=req.knowledge_gap_flag,
+    )
+    if not req.feedback_result or req.knowledge_gap_flag:
+        database.enqueue_human_review(req.message_id, 'Negative user feedback')
+    return FeedbackResponse(success=True, feedback_id=feedback_id)
+
+
+@app.get('/review-queue', response_model=list[HumanReviewQueueItem])
+def get_review_queue(current_user: dict = Depends(get_admin_user)) -> list[HumanReviewQueueItem]:
+    items = database.list_human_review_queue()
+    return [HumanReviewQueueItem(**item) for item in items]
+
+
+@app.post('/review-queue/{queue_id}/reviewed', response_model=MarkReviewResponse)
+def mark_reviewed(queue_id: int, current_user: dict = Depends(get_admin_user)) -> MarkReviewResponse:
+    database.mark_human_reviewed(queue_id)
+    return MarkReviewResponse(success=True)
 
 
 @app.delete('/files/{file_id}', response_model=DeleteFileResponse)

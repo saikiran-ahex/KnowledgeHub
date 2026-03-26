@@ -20,8 +20,7 @@ from qdrant_client.http import models as qmodels
 
 from app.config import get_settings
 from app.services.chunker import chunk_text
-from app.services.clip_service import ClipService
-from app.services.document_loader import IMAGE_EXTENSIONS, load_document
+from app.services.document_loader import IMAGE_EXTENSIONS, extract_document_images, load_document
 
 logger = logging.getLogger(__name__)
 
@@ -35,11 +34,10 @@ class RagService:
         settings = get_settings()
         self.settings = settings
         logger.info(
-            'RagService init started model=%s embedding=%s text_collection=%s image_collection=%s',
+            'RagService init started model=%s embedding=%s text_collection=%s',
             settings.openai_model,
             settings.embedding_model,
             settings.qdrant_collection,
-            settings.qdrant_image_collection,
         )
 
         self.chat_llm = self._build_chat_llm(use_default_temperature=False)
@@ -50,7 +48,6 @@ class RagService:
             base_url=settings.openai_base_url,
             model=settings.embedding_model,
         )
-        self.clip_service = ClipService(settings.clip_model_name)
 
         self.qdrant_client = QdrantClient(
             url=settings.qdrant_url,
@@ -114,17 +111,6 @@ class RagService:
                 vectors_config=qmodels.VectorParams(size=text_dim, distance=qmodels.Distance.COSINE),
             )
             logger.info('Qdrant text collection created name=%s dim=%s', self.settings.qdrant_collection, text_dim)
-
-        image_exists = self.qdrant_client.collection_exists(self.settings.qdrant_image_collection)
-        if image_exists:
-            logger.info('Qdrant image collection exists name=%s', self.settings.qdrant_image_collection)
-        else:
-            logger.info('Qdrant image collection missing, creating name=%s', self.settings.qdrant_image_collection)
-            self.qdrant_client.create_collection(
-                collection_name=self.settings.qdrant_image_collection,
-                vectors_config=qmodels.VectorParams(size=self.clip_service.dim, distance=qmodels.Distance.COSINE),
-            )
-            logger.info('Qdrant image collection created name=%s dim=%s', self.settings.qdrant_image_collection, self.clip_service.dim)
 
     def _expand_query(self, question: str) -> list[str]:
         logger.info('Query expansion started')
@@ -271,6 +257,40 @@ class RagService:
                 return cleaned
         return None
 
+    def profile_document(self, file_path: Path) -> tuple[str | None, str | None]:
+        ext = file_path.suffix.lower()
+        source_name = file_path.name.removeprefix('chat_').removeprefix('adhoc_')
+        if ext in IMAGE_EXTENSIONS:
+            return 'image', f'Uploaded image asset: {source_name}'
+
+        try:
+            text = load_document(file_path)
+        except Exception as exc:
+            logger.warning('Document profiling failed during load file=%s error=%s', file_path.name, exc)
+            return None, None
+
+        excerpt = ' '.join((text or '').split())[:6000]
+        if not excerpt:
+            return None, f'Indexed document: {source_name}'
+
+        prompt = (
+            'Read this document excerpt and return strictly JSON with two fields: '
+            '"domain" as a short phrase for the document domain, and "description" as one sentence '
+            'summarizing the document. Do not include markdown.'
+        )
+        try:
+            response = self._invoke_chat(f'{prompt}\n\nExcerpt:\n{excerpt}')
+            payload = json.loads(str(response.content).strip())
+            domain = str(payload.get('domain') or '').strip() or None
+            description = str(payload.get('description') or '').strip() or None
+            if domain or description:
+                logger.info('Document profiling completed file=%s domain=%s', file_path.name, domain)
+                return domain, description
+        except Exception as exc:
+            logger.warning('Document profiling LLM parse failed file=%s error=%s', file_path.name, exc)
+
+        return None, f'Indexed document: {source_name}'
+
     def _finalize_candidates(self, candidates: list[Document], limit: int | None = None) -> list[Document]:
         deduped = self._dedupe_docs(candidates)
         deduped.sort(key=lambda doc: float(doc.metadata.get('score', 0.0)), reverse=True)
@@ -303,24 +323,59 @@ class RagService:
     def _ingest_image(self, file_path: Path, metadata: dict) -> int:
         source_name = self._source_name(file_path, metadata)
         logger.info('Image ingest started source=%s', source_name)
-        vector = self.clip_service.embed_image(file_path)
-        point = qmodels.PointStruct(
-            id=uuid4().hex,
-            vector=vector,
-            payload={
+        description = self._describe_document_image(file_path) or f'Image file: {source_name}'
+
+        text_doc = Document(
+            page_content=description,
+            metadata={
                 'source': source_name,
                 'type': 'image',
-                'text': f'Image file: {source_name}',
+                'chunk_type': 'image',
+                'chunk_id': f"{metadata.get('doc_id', file_path.stem)}:image:1",
+                'heading': self._guess_heading(description) or source_name,
+                'chunk_size_chars': len(description),
+                'image_url': str(file_path),
                 **metadata,
             },
         )
-        self.qdrant_client.upsert(
-            collection_name=self.settings.qdrant_image_collection,
-            points=[point],
-            wait=True,
-        )
+        self.vector_store.add_documents([text_doc])
         logger.info('Image ingest completed source=%s', source_name)
         return 1
+
+    def _describe_document_image(self, image_path: Path) -> str:
+        suffix = image_path.suffix.lower().lstrip('.')
+        mime = 'image/png'
+        if suffix in {'jpg', 'jpeg'}:
+            mime = 'image/jpeg'
+        elif suffix == 'webp':
+            mime = 'image/webp'
+
+        encoded = base64.b64encode(image_path.read_bytes()).decode('utf-8')
+        image_url = f'data:{mime};base64,{encoded}'
+        prompt = (
+            'This image is extracted from a technical document. Please provide a detailed description of '
+            'everything visible in this image including any text, labels, diagrams, arrows, measurements, '
+            'port names, UI elements, steps, or technical specifications. Be as specific as possible so that '
+            'someone who cannot see the image can fully understand its contents.'
+        )
+        try:
+            response = self.openai_client.chat.completions.create(
+                model=self.settings.openai_model,
+                messages=[
+                    {'role': 'system', 'content': 'You describe technical document images in detail for retrieval indexing.'},
+                    {
+                        'role': 'user',
+                        'content': [
+                            {'type': 'text', 'text': prompt},
+                            {'type': 'image_url', 'image_url': {'url': image_url}},
+                        ],
+                    },
+                ],
+            )
+            return (response.choices[0].message.content or '').strip()
+        except Exception as exc:
+            logger.warning('Document image description failed image=%s error=%s', image_path.name, exc)
+            return ''
 
     def ingest_file(self, file_path: Path, metadata: dict | None = None, raw_bytes: bytes | None = None) -> int:
         ingest_start = perf_counter()
@@ -348,10 +403,6 @@ class RagService:
             chunk_size=self.settings.chunk_size,
             overlap=self.settings.chunk_overlap,
         )
-        if not chunks:
-            logger.info('Ingest completed source=%s chunks=0 elapsed_ms=%s', source_name, int((perf_counter() - ingest_start) * 1000))
-            return 0
-
         if not metadata.get('tags'):
             metadata['tags'] = self._auto_tags(text, source_name)
 
@@ -361,102 +412,42 @@ class RagService:
             chunk_meta = {
                 'source': source_name,
                 'type': 'text',
+                'chunk_type': 'text',
                 'chunk_id': f"{metadata.get('doc_id', file_path.stem)}:{idx}",
                 'heading': heading,
                 'chunk_size_chars': len(chunk),
+                'image_url': None,
                 **metadata,
             }
             docs.append(Document(page_content=chunk, metadata=chunk_meta))
+
+        extracted_dir = self.settings.upload_dir / '_extracted' / str(metadata.get('doc_id', file_path.stem))
+        extracted_images = extract_document_images(file_path, extracted_dir)
+        for image_index, image_info in enumerate(extracted_images, start=1):
+            image_path = Path(image_info['path'])
+            description = self._describe_document_image(image_path)
+            if not description:
+                continue
+            image_meta = {
+                'source': source_name,
+                'type': 'image',
+                'chunk_type': 'image',
+                'chunk_id': f"{metadata.get('doc_id', file_path.stem)}:image:{image_index}",
+                'heading': self._guess_heading(description) or image_path.name,
+                'chunk_size_chars': len(description),
+                'page_no': image_info.get('page_no'),
+                'image_url': str(image_path),
+                **metadata,
+            }
+            docs.append(Document(page_content=description, metadata=image_meta))
+
+        if not docs:
+            logger.info('Ingest completed source=%s chunks=0 elapsed_ms=%s', source_name, int((perf_counter() - ingest_start) * 1000))
+            return 0
         logger.info('Vector store add started source=%s docs=%s', source_name, len(docs))
         self.vector_store.add_documents(docs)
         logger.info('Ingest completed source=%s chunks=%s elapsed_ms=%s', source_name, len(docs), int((perf_counter() - ingest_start) * 1000))
         return len(docs)
-
-    def _retrieve_image_candidates(self, queries: list[str], k: int, filters: dict | None = None, owner_ids: list[str] | None = None) -> list[Document]:
-        docs: list[Document] = []
-        qdrant_filter = self._build_qdrant_filter(filters, owner_ids=owner_ids)
-        vectors = self.clip_service.embed_texts(queries)
-
-        def _search(query: str, query_vector: list[float]) -> list[Document]:
-            results = self.qdrant_client.search(
-                collection_name=self.settings.qdrant_image_collection,
-                query_vector=query_vector,
-                limit=k,
-                with_payload=True,
-                query_filter=qdrant_filter,
-            )
-            logger.info('Image retrieval query="%s" hits=%s', query[:120], len(results))
-            found: list[Document] = []
-            for point in results:
-                payload = point.payload or {}
-                source = self._normalize_source_name(str(payload.get('source', 'unknown')))
-                found.append(
-                    Document(
-                        page_content=f"Image match from {source}. Similarity score: {float(point.score or 0.0):.4f}",
-                        metadata={
-                            'source': source,
-                            'type': 'image',
-                            'score': float(point.score or 0.0),
-                            'doc_id': payload.get('doc_id'),
-                            'chunk_id': payload.get('chunk_id'),
-                            'owner_id': payload.get('owner_id'),
-                            'tenant_id': payload.get('tenant_id'),
-                            'uploaded_at': payload.get('uploaded_at'),
-                            'file_type': payload.get('file_type'),
-                            'page_no': payload.get('page_no'),
-                            'content_hash': payload.get('content_hash'),
-                            'tags': payload.get('tags'),
-                            'heading': payload.get('heading'),
-                            'chunk_size_chars': payload.get('chunk_size_chars'),
-                        },
-                    )
-                )
-            return found
-
-        max_workers = min(len(queries), 4) or 1
-        with ThreadPoolExecutor(max_workers=max_workers) as ex:
-            futures = [ex.submit(_search, query, vec) for query, vec in zip(queries, vectors)]
-            for f in as_completed(futures):
-                docs.extend(f.result())
-        return docs
-
-    def _add_ephemeral_image_point(self, file_path: Path) -> str:
-        point_id = str(uuid4())
-        source_name = file_path.name.removeprefix('chat_').removeprefix('adhoc_')
-        vector = self.clip_service.embed_image(file_path)
-        payload = {
-            'source': source_name,
-            'type': 'image',
-            'text': f'Ephemeral ad-hoc image: {source_name}',
-            'doc_id': f'ephemeral:{point_id}',
-            'chunk_id': f'{point_id}:0',
-            'owner_id': None,
-            'tenant_id': None,
-            'uploaded_at': None,
-            'file_type': file_path.suffix.lstrip('.'),
-            'content_hash': None,
-            'tags': self._auto_tags('', source_name),
-            'page_no': None,
-            'ephemeral': True,
-        }
-        self.qdrant_client.upsert(
-            collection_name=self.settings.qdrant_image_collection,
-            points=[qmodels.PointStruct(id=point_id, vector=vector, payload=payload)],
-            wait=True,
-        )
-        logger.info('Ephemeral image indexed point_id=%s source=%s', point_id, source_name)
-        return point_id
-
-    def _remove_ephemeral_image_point(self, point_id: str) -> None:
-        try:
-            self.qdrant_client.delete(
-                collection_name=self.settings.qdrant_image_collection,
-                points_selector=qmodels.PointIdsList(points=[point_id]),
-                wait=True,
-            )
-            logger.info('Ephemeral image removed point_id=%s', point_id)
-        except Exception as exc:
-            logger.warning('Failed to remove ephemeral image point_id=%s error=%s', point_id, exc)
 
     def _retrieve_candidates(self, queries: list[str], retrieve_k: int, filters: dict | None = None, owner_ids: list[str] | None = None) -> list[Document]:
         qdrant_filter = self._build_qdrant_filter(filters, metadata_prefix='metadata.', owner_ids=owner_ids)
@@ -513,12 +504,10 @@ class RagService:
             for f in as_completed(futures):
                 text_candidates.extend(f.result())
 
-        image_candidates = self._retrieve_image_candidates(queries, self.settings.image_retrieval_top_k, filters=filters, owner_ids=owner_ids)
-        candidates = self._finalize_candidates(text_candidates + image_candidates, limit=retrieve_k)
+        candidates = self._finalize_candidates(text_candidates, limit=retrieve_k)
         logger.info(
-            'Retrieval completed text_docs=%s image_docs=%s total=%s',
+            'Retrieval completed text_docs=%s total=%s',
             len(text_candidates),
-            len(image_candidates),
             len(candidates),
         )
         return candidates
@@ -715,65 +704,56 @@ class RagService:
 
         file_docs: list[Document] = []
         ext = file_path.suffix.lower()
-        ephemeral_point_id: str | None = None
-        try:
-            if ext in IMAGE_EXTENSIONS:
-                # Temporary index this uploaded image so retrieval can include it.
-                ephemeral_point_id = self._add_ephemeral_image_point(file_path)
+        retrieval_start = perf_counter()
+        candidates = self._retrieve_candidates(queries, retrieve_k, filters=filters, owner_ids=owner_ids)
+        logger.info('Ask-with-file retrieval elapsed_ms=%s', int((perf_counter() - retrieval_start) * 1000))
 
-            retrieval_start = perf_counter()
-            candidates = self._retrieve_candidates(queries, retrieve_k, filters=filters, owner_ids=owner_ids)
-            logger.info('Ask-with-file retrieval elapsed_ms=%s', int((perf_counter() - retrieval_start) * 1000))
-
-            if ext in IMAGE_EXTENSIONS:
-                vision_text = self._analyze_image_with_llm(file_path, question, image_model=image_model)
-                if vision_text.strip():
-                    file_docs.append(
-                        Document(
-                            page_content=vision_text,
-                            metadata={'source': source_name, 'type': 'image_vision', 'file_type': file_path.suffix.lstrip('.')},
-                        )
+        if ext in IMAGE_EXTENSIONS:
+            vision_text = self._analyze_image_with_llm(file_path, question, image_model=image_model)
+            if vision_text.strip():
+                file_docs.append(
+                    Document(
+                        page_content=vision_text,
+                        metadata={'source': source_name, 'type': 'image_vision', 'file_type': file_path.suffix.lstrip('.')},
                     )
-                    logger.info('Ask-with-file image analysis completed file=%s chars=%s', file_path.name, len(vision_text))
-            else:
-                file_text = load_document(file_path)
-                chunks = chunk_text(file_text, chunk_size=self.settings.chunk_size, overlap=self.settings.chunk_overlap)
-                for idx, chunk in enumerate(chunks[: self.settings.rerank_top_k]):
-                    file_docs.append(
-                        Document(
-                            page_content=chunk,
-                            metadata={
-                                'source': source_name,
-                                'type': 'ad_hoc_file',
-                                'file_type': file_path.suffix.lstrip('.'),
-                                'chunk_id': f'adhoc:{idx}',
-                            },
-                        )
-                    )
-                logger.info('Ask-with-file text extraction completed file=%s chunks=%s', file_path.name, len(file_docs))
-
-            candidates = self._dedupe_docs(file_docs + candidates)
-            if not candidates:
-                logger.info('Ask-with-file completed: no candidates elapsed_ms=%s', int((perf_counter() - ask_start) * 1000))
-                return 'No useful content was found in the uploaded file or shared library.', []
-
-            if self.reranker is not None:
-                rerank_start = perf_counter()
-                selected_docs, fallback_used = self._rerank_documents(candidates, question)
-                logger.info(
-                    'Ask-with-file rerank elapsed_ms=%s fallback_used=%s',
-                    int((perf_counter() - rerank_start) * 1000),
-                    fallback_used,
                 )
-            else:
-                selected_docs = candidates[: self.settings.rerank_top_k]
+                logger.info('Ask-with-file image analysis completed file=%s chars=%s', file_path.name, len(vision_text))
+        else:
+            file_text = load_document(file_path)
+            chunks = chunk_text(file_text, chunk_size=self.settings.chunk_size, overlap=self.settings.chunk_overlap)
+            for idx, chunk in enumerate(chunks[: self.settings.rerank_top_k]):
+                file_docs.append(
+                    Document(
+                        page_content=chunk,
+                        metadata={
+                            'source': source_name,
+                            'type': 'ad_hoc_file',
+                            'file_type': file_path.suffix.lstrip('.'),
+                            'chunk_id': f'adhoc:{idx}',
+                        },
+                    )
+                )
+            logger.info('Ask-with-file text extraction completed file=%s chunks=%s', file_path.name, len(file_docs))
 
-            answer_text, sources = self._answer_from_documents(question, selected_docs, history=history)
-            logger.info('Ask-with-file completed sources=%s elapsed_ms=%s', len(sources), int((perf_counter() - ask_start) * 1000))
-            return answer_text, sources
-        finally:
-            if ephemeral_point_id is not None:
-                self._remove_ephemeral_image_point(ephemeral_point_id)
+        candidates = self._dedupe_docs(file_docs + candidates)
+        if not candidates:
+            logger.info('Ask-with-file completed: no candidates elapsed_ms=%s', int((perf_counter() - ask_start) * 1000))
+            return 'No useful content was found in the uploaded file or shared library.', []
+
+        if self.reranker is not None:
+            rerank_start = perf_counter()
+            selected_docs, fallback_used = self._rerank_documents(candidates, question)
+            logger.info(
+                'Ask-with-file rerank elapsed_ms=%s fallback_used=%s',
+                int((perf_counter() - rerank_start) * 1000),
+                fallback_used,
+            )
+        else:
+            selected_docs = candidates[: self.settings.rerank_top_k]
+
+        answer_text, sources = self._answer_from_documents(question, selected_docs, history=history)
+        logger.info('Ask-with-file completed sources=%s elapsed_ms=%s', len(sources), int((perf_counter() - ask_start) * 1000))
+        return answer_text, sources
 
     def chat(
         self,
@@ -823,20 +803,21 @@ class RagService:
             logger.warning('Failed to delete from text collection doc_id=%s error=%s', doc_id, exc)
         
         # Delete from image collection
-        try:
-            self.qdrant_client.delete(
-                collection_name=self.settings.qdrant_image_collection,
-                points_selector=qmodels.FilterSelector(
-                    filter=qmodels.Filter(
-                        must=[qmodels.FieldCondition(key='doc_id', match=qmodels.MatchValue(value=doc_id))]
-                    )
-                ),
-                wait=True,
-            )
-            deleted_count += 1
-            logger.info('Deleted from image collection doc_id=%s', doc_id)
-        except Exception as exc:
-            logger.warning('Failed to delete from image collection doc_id=%s error=%s', doc_id, exc)
+        if self.qdrant_client.collection_exists(self.settings.qdrant_image_collection):
+            try:
+                self.qdrant_client.delete(
+                    collection_name=self.settings.qdrant_image_collection,
+                    points_selector=qmodels.FilterSelector(
+                        filter=qmodels.Filter(
+                            must=[qmodels.FieldCondition(key='doc_id', match=qmodels.MatchValue(value=doc_id))]
+                        )
+                    ),
+                    wait=True,
+                )
+                deleted_count += 1
+                logger.info('Deleted from legacy image collection doc_id=%s', doc_id)
+            except Exception as exc:
+                logger.warning('Failed to delete from legacy image collection doc_id=%s error=%s', doc_id, exc)
         
         logger.info('Delete by doc_id completed doc_id=%s collections=%s', doc_id, deleted_count)
         return deleted_count
@@ -875,10 +856,12 @@ class RagService:
             owner_id,
             metadata_prefix='metadata.',
         )
-        image_doc_ids = self._scroll_doc_ids(
-            self.settings.qdrant_image_collection,
-            owner_id,
-        )
+        image_doc_ids: set[str] = set()
+        if self.qdrant_client.collection_exists(self.settings.qdrant_image_collection):
+            image_doc_ids = self._scroll_doc_ids(
+                self.settings.qdrant_image_collection,
+                owner_id,
+            )
 
         text_to_remove = sorted(doc_id for doc_id in text_doc_ids if doc_id not in valid_doc_ids)
         image_to_remove = sorted(doc_id for doc_id in image_doc_ids if doc_id not in valid_doc_ids)

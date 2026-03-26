@@ -44,12 +44,15 @@ export default function Admin() {
   const [evaluationDatasetPath, setEvaluationDatasetPath] = useState('eval/sample_ragas_eval.jsonl');
   const [evaluationResult, setEvaluationResult] = useState(null);
   const [selectedFiles, setSelectedFiles] = useState([]);
+  const [reviewQueue, setReviewQueue] = useState([]);
+  const [reviewBusyId, setReviewBusyId] = useState(null);
 
   useEffect(() => {
     if (token && isAdmin) {
       loadFiles();
       loadLatestEvaluation();
       loadSettings();
+      loadReviewQueue();
     }
   }, [token, isAdmin]);
 
@@ -335,6 +338,38 @@ export default function Admin() {
     }
   }
 
+  async function loadReviewQueue() {
+    try {
+      const res = await fetch(`${API_BASE}/review-queue`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await readApiResponse(res);
+      if (!res.ok) throw new Error(data.detail || 'Failed to load review queue');
+      setReviewQueue(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Failed to load review queue:', err);
+      setReviewQueue([]);
+    }
+  }
+
+  async function markReviewed(queueId) {
+    setReviewBusyId(queueId);
+    try {
+      const res = await fetch(`${API_BASE}/review-queue/${queueId}/reviewed`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await readApiResponse(res);
+      if (!res.ok) throw new Error(data.detail || 'Failed to mark as reviewed');
+      await loadReviewQueue();
+      showNotification('Marked as reviewed', 'success');
+    } catch (err) {
+      showNotification(`Error: ${err.message || err}`, 'error');
+    } finally {
+      setReviewBusyId(null);
+    }
+  }
+
   function removeFile(indexToRemove) {
     setSelectedFiles((prev) =>
       prev.filter((_, index) => index !== indexToRemove)
@@ -531,6 +566,43 @@ export default function Admin() {
 
             </div>
           ) : null}
+        </section>
+        <section className="adminSection">
+          <div className="sectionHeader">
+            <h2>Human Review Queue</h2>
+          </div>
+          <p>Flagged answers from pipeline checks and user feedback appear here for admin review.</p>
+          {reviewQueue.length === 0 ? (
+            <p className="emptyText">No flagged interactions right now</p>
+          ) : (
+            <div className="reviewQueueList">
+              {reviewQueue.map((item) => (
+                <div key={item.id} className="reviewQueueCard">
+                  <div className="reviewQueueHeader">
+                    <span className="reviewReason">{item.reason}</span>
+                    <span className={`reviewStatus ${item.reviewed ? 'done' : 'pending'}`}>
+                      {item.reviewed ? 'Reviewed' : 'Pending'}
+                    </span>
+                  </div>
+                  {item.question ? <div className="reviewBlock"><strong>Question:</strong> {item.question}</div> : null}
+                  <div className="reviewBlock"><strong>Answer:</strong> {item.answer}</div>
+                  <div className="reviewMetrics">
+                    <span className="metricChip">Self: {formatMetricPercent(item.ragas_score)}</span>
+                    <span className="metricChip">Judge: {formatMetricPercent(item.judge_score)}</span>
+                  </div>
+                  {!item.reviewed ? (
+                    <button
+                      onClick={() => markReviewed(item.id)}
+                      className="cleanupBtn"
+                      disabled={reviewBusyId === item.id}
+                    >
+                      {reviewBusyId === item.id ? 'Saving...' : 'Mark as Reviewed'}
+                    </button>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          )}
         </section>
         <section className="adminSection">
           <div className="sectionHeader">

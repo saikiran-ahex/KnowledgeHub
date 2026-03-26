@@ -22,6 +22,7 @@ def init_db():
                     id BIGSERIAL PRIMARY KEY,
                     username TEXT UNIQUE NOT NULL,
                     password_hash TEXT NOT NULL,
+                    role TEXT NOT NULL DEFAULT 'user',
                     is_admin BOOLEAN DEFAULT FALSE,
                     created_at TEXT NOT NULL
                 )'''
@@ -31,11 +32,13 @@ def init_db():
                 '''CREATE TABLE IF NOT EXISTS files (
                     id BIGSERIAL PRIMARY KEY,
                     user_id BIGINT NOT NULL,
+                    uploaded_by BIGINT,
                     doc_id TEXT UNIQUE NOT NULL,
                     filename TEXT NOT NULL,
                     file_path TEXT NOT NULL,
                     file_type TEXT NOT NULL,
                     content_hash TEXT,
+                    is_global BOOLEAN NOT NULL DEFAULT TRUE,
                     chunks_indexed INTEGER NOT NULL,
                     uploaded_at TEXT NOT NULL,
                     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -44,6 +47,20 @@ def init_db():
             c.execute(
                 'CREATE UNIQUE INDEX IF NOT EXISTS idx_files_user_content_hash '
                 'ON files(user_id, content_hash) WHERE content_hash IS NOT NULL'
+            )
+            c.execute(
+                'CREATE UNIQUE INDEX IF NOT EXISTS idx_files_global_content_hash '
+                'ON files(content_hash) WHERE content_hash IS NOT NULL'
+            )
+
+            c.execute(
+                '''CREATE TABLE IF NOT EXISTS documents (
+                    id BIGSERIAL PRIMARY KEY,
+                    doc_id TEXT UNIQUE NOT NULL,
+                    domain TEXT,
+                    description TEXT,
+                    created_at TEXT NOT NULL
+                )'''
             )
 
             c.execute(
@@ -64,9 +81,33 @@ def init_db():
                     role TEXT NOT NULL,
                     content TEXT NOT NULL,
                     sources_json TEXT NOT NULL,
+                    ragas_score DOUBLE PRECISION,
+                    judge_score DOUBLE PRECISION,
                     created_at TEXT NOT NULL,
                     image_base64 TEXT,
                     FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
+                )'''
+            )
+            c.execute(
+                '''CREATE TABLE IF NOT EXISTS feedback (
+                    id BIGSERIAL PRIMARY KEY,
+                    message_id BIGINT NOT NULL,
+                    chunks_used_json TEXT NOT NULL DEFAULT '[]',
+                    feedback_result BOOLEAN NOT NULL,
+                    comment TEXT,
+                    knowledge_gap_flag BOOLEAN NOT NULL DEFAULT FALSE,
+                    created_at TEXT NOT NULL,
+                    FOREIGN KEY (message_id) REFERENCES conversation_messages(id) ON DELETE CASCADE
+                )'''
+            )
+            c.execute(
+                '''CREATE TABLE IF NOT EXISTS human_review_queue (
+                    id BIGSERIAL PRIMARY KEY,
+                    message_id BIGINT NOT NULL,
+                    reason TEXT NOT NULL,
+                    reviewed BOOLEAN NOT NULL DEFAULT FALSE,
+                    created_at TEXT NOT NULL,
+                    FOREIGN KEY (message_id) REFERENCES conversation_messages(id) ON DELETE CASCADE
                 )'''
             )
             c.execute(
@@ -86,9 +127,24 @@ def init_db():
                     FOREIGN KEY (admin_user_id) REFERENCES users(id) ON DELETE CASCADE
                 )'''
             )
+            c.execute(
+                '''CREATE TABLE IF NOT EXISTS admin_settings (
+                    id INTEGER PRIMARY KEY,
+                    chat_model TEXT NOT NULL,
+                    image_model TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                )'''
+            )
+            c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'user'")
             c.execute('ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE')
+            c.execute('UPDATE users SET role = CASE WHEN is_admin THEN \'admin\' ELSE \'user\' END WHERE role IS NULL OR role = \'\'')
             c.execute('ALTER TABLE files ADD COLUMN IF NOT EXISTS content_hash TEXT')
+            c.execute('ALTER TABLE files ADD COLUMN IF NOT EXISTS uploaded_by BIGINT')
+            c.execute('ALTER TABLE files ADD COLUMN IF NOT EXISTS is_global BOOLEAN NOT NULL DEFAULT TRUE')
+            c.execute('UPDATE files SET uploaded_by = user_id WHERE uploaded_by IS NULL')
             c.execute('ALTER TABLE conversation_messages ADD COLUMN IF NOT EXISTS image_base64 TEXT')
+            c.execute('ALTER TABLE conversation_messages ADD COLUMN IF NOT EXISTS ragas_score DOUBLE PRECISION')
+            c.execute('ALTER TABLE conversation_messages ADD COLUMN IF NOT EXISTS judge_score DOUBLE PRECISION')
             c.execute('ALTER TABLE evaluation_runs ADD COLUMN IF NOT EXISTS use_rerank BOOLEAN NOT NULL DEFAULT TRUE')
         conn.commit()
 
@@ -102,12 +158,13 @@ def get_db():
         conn.close()
 
 
-def create_user(username: str, password_hash: str, is_admin: bool = False) -> int:
+def create_user(username: str, password_hash: str, is_admin: bool = False, role: str | None = None) -> int:
+    resolved_role = role or ('admin' if is_admin else 'user')
     with get_db() as conn:
         with conn.cursor() as c:
             c.execute(
-                'INSERT INTO users (username, password_hash, is_admin, created_at) VALUES (%s, %s, %s, %s) RETURNING id',
-                (username, password_hash, is_admin, datetime.now(timezone.utc).isoformat()),
+                'INSERT INTO users (username, password_hash, role, is_admin, created_at) VALUES (%s, %s, %s, %s, %s) RETURNING id',
+                (username, password_hash, resolved_role, is_admin, datetime.now(timezone.utc).isoformat()),
             )
             user_id = c.fetchone()['id']
         conn.commit()
@@ -118,17 +175,24 @@ def get_user_by_username(username: str):
     with get_db() as conn:
         with conn.cursor() as c:
             c.execute('SELECT * FROM users WHERE username = %s', (username,))
-            return c.fetchone()
+            row = c.fetchone()
+            if not row:
+                return None
+            user = dict(row)
+            user['role'] = user.get('role') or ('admin' if user.get('is_admin') else 'user')
+            user['is_admin'] = bool(user.get('is_admin') or user['role'] == 'admin')
+            return user
 
 
 def upsert_admin_user(username: str, password_hash: str) -> int:
     with get_db() as conn:
         with conn.cursor() as c:
             c.execute(
-                '''INSERT INTO users (username, password_hash, is_admin, created_at)
-                   VALUES (%s, %s, TRUE, %s)
+                '''INSERT INTO users (username, password_hash, role, is_admin, created_at)
+                   VALUES (%s, %s, 'admin', TRUE, %s)
                    ON CONFLICT (username) DO UPDATE SET
                        password_hash = EXCLUDED.password_hash,
+                       role = 'admin',
                        is_admin = TRUE
                    RETURNING id''',
                 (username, password_hash, datetime.now(timezone.utc).isoformat()),
@@ -154,13 +218,21 @@ def create_file_record(
     with get_db() as conn:
         with conn.cursor() as c:
             c.execute(
-                '''INSERT INTO files (user_id, doc_id, filename, file_path, file_type, content_hash, chunks_indexed, uploaded_at)
-                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s) RETURNING id''',
-                (user_id, doc_id, filename, file_path, file_type, content_hash, chunks, datetime.now(timezone.utc).isoformat()),
+                '''INSERT INTO files (user_id, uploaded_by, doc_id, filename, file_path, file_type, content_hash, is_global, chunks_indexed, uploaded_at)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, TRUE, %s, %s) RETURNING id''',
+                (user_id, user_id, doc_id, filename, file_path, file_type, content_hash, chunks, datetime.now(timezone.utc).isoformat()),
             )
             file_id = c.fetchone()['id']
         conn.commit()
         return int(file_id)
+
+
+def get_file_by_content_hash(content_hash: str):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute('SELECT * FROM files WHERE content_hash = %s', (content_hash,))
+            row = c.fetchone()
+            return dict(row) if row else None
 
 
 def get_user_file_by_content_hash(user_id: int, content_hash: str):
@@ -184,7 +256,7 @@ def get_all_admin_files():
             c.execute(
                 '''SELECT f.* FROM files f
                    JOIN users u ON f.user_id = u.id
-                   WHERE u.is_admin = TRUE
+                   WHERE u.role = 'admin' OR u.is_admin = TRUE
                    ORDER BY f.uploaded_at DESC'''
             )
             return [dict(row) for row in c.fetchall()]
@@ -193,7 +265,7 @@ def get_all_admin_files():
 def get_admin_user_ids() -> list[int]:
     with get_db() as conn:
         with conn.cursor() as c:
-            c.execute('SELECT id FROM users WHERE is_admin = TRUE ORDER BY id ASC')
+            c.execute("SELECT id FROM users WHERE role = 'admin' OR is_admin = TRUE ORDER BY id ASC")
             return [int(row['id']) for row in c.fetchall()]
 
 
@@ -203,7 +275,7 @@ def get_admin_file_by_id(file_id: int):
             c.execute(
                 '''SELECT f.* FROM files f
                    JOIN users u ON f.user_id = u.id
-                   WHERE f.id = %s AND u.is_admin = TRUE''',
+                   WHERE f.id = %s AND (u.role = 'admin' OR u.is_admin = TRUE)''',
                 (file_id,),
             )
             row = c.fetchone()
@@ -228,7 +300,7 @@ def delete_admin_file_record(file_id: int):
             c.execute(
                 '''SELECT f.* FROM files f
                    JOIN users u ON f.user_id = u.id
-                   WHERE f.id = %s AND u.is_admin = TRUE''',
+                   WHERE f.id = %s AND (u.role = 'admin' OR u.is_admin = TRUE)''',
                 (file_id,),
             )
             file = c.fetchone()
@@ -322,19 +394,123 @@ def append_conversation_message(
     content: str,
     sources: list[dict] | None = None,
     image_base64: str | None = None,
+    ragas_score: float | None = None,
+    judge_score: float | None = None,
 ):
     now = datetime.now(timezone.utc).isoformat()
     with get_db() as conn:
         with conn.cursor() as c:
             c.execute(
-                '''INSERT INTO conversation_messages (conversation_id, role, content, sources_json, created_at, image_base64)
-                   VALUES (%s, %s, %s, %s, %s, %s) RETURNING id''',
-                (conversation_id, role, content, json.dumps(sources or []), now, image_base64),
+                '''INSERT INTO conversation_messages (conversation_id, role, content, sources_json, ragas_score, judge_score, created_at, image_base64)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s) RETURNING id''',
+                (conversation_id, role, content, json.dumps(sources or []), ragas_score, judge_score, now, image_base64),
             )
             message_id = c.fetchone()['id']
             c.execute('UPDATE conversations SET updated_at = %s WHERE id = %s', (now, conversation_id))
         conn.commit()
         return int(message_id)
+
+
+def create_document_record(doc_id: str, domain: str | None, description: str | None):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute(
+                '''INSERT INTO documents (doc_id, domain, description, created_at)
+                   VALUES (%s, %s, %s, %s)
+                   ON CONFLICT (doc_id) DO UPDATE SET
+                       domain = EXCLUDED.domain,
+                       description = EXCLUDED.description
+                ''',
+                (doc_id, domain, description, datetime.now(timezone.utc).isoformat()),
+            )
+        conn.commit()
+
+
+def list_documents():
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute('SELECT * FROM documents ORDER BY created_at DESC, id DESC')
+            return [dict(row) for row in c.fetchall()]
+
+
+def create_feedback(
+    message_id: int,
+    feedback_result: bool,
+    chunks_used: list[str] | None = None,
+    comment: str | None = None,
+    knowledge_gap_flag: bool = False,
+):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute(
+                '''INSERT INTO feedback (message_id, chunks_used_json, feedback_result, comment, knowledge_gap_flag, created_at)
+                   VALUES (%s, %s, %s, %s, %s, %s)
+                   RETURNING id''',
+                (
+                    message_id,
+                    json.dumps(chunks_used or []),
+                    feedback_result,
+                    comment,
+                    knowledge_gap_flag,
+                    datetime.now(timezone.utc).isoformat(),
+                ),
+            )
+            row = c.fetchone()
+        conn.commit()
+        return int(row['id']) if row else None
+
+
+def enqueue_human_review(message_id: int, reason: str):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute(
+                '''INSERT INTO human_review_queue (message_id, reason, reviewed, created_at)
+                   VALUES (%s, %s, FALSE, %s)
+                   RETURNING id''',
+                (message_id, reason, datetime.now(timezone.utc).isoformat()),
+            )
+            row = c.fetchone()
+        conn.commit()
+        return int(row['id']) if row else None
+
+
+def list_human_review_queue():
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute(
+                '''SELECT
+                       q.id,
+                       q.message_id,
+                       q.reason,
+                       q.reviewed,
+                       q.created_at,
+                       um.content AS question,
+                       m.content AS answer,
+                       m.ragas_score,
+                       m.judge_score,
+                       c.id AS conversation_id
+                   FROM human_review_queue q
+                   JOIN conversation_messages m ON m.id = q.message_id
+                   LEFT JOIN LATERAL (
+                       SELECT content
+                       FROM conversation_messages
+                       WHERE conversation_id = m.conversation_id
+                         AND role = 'user'
+                         AND id < m.id
+                       ORDER BY id DESC
+                       LIMIT 1
+                   ) um ON TRUE
+                   JOIN conversations c ON c.id = m.conversation_id
+                   ORDER BY q.created_at DESC, q.id DESC'''
+            )
+            return [dict(row) for row in c.fetchall()]
+
+
+def mark_human_reviewed(queue_id: int):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute('UPDATE human_review_queue SET reviewed = TRUE WHERE id = %s', (queue_id,))
+        conn.commit()
 
 
 def count_conversation_messages(conversation_id: str) -> int:

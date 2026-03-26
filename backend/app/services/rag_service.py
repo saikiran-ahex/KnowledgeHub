@@ -535,8 +535,10 @@ class RagService:
 
         system_msg = (
             'You are a helpful assistant with access to a document knowledge base. '
-            'if user greets you, greet them back.'
-            'If context is provided, use it to answer. '
+            'If user greets you, greet them back. '
+            'Use the provided context to answer the question accurately and directly. '
+            'Focus on what was asked without adding unnecessary information. '
+            'If context is provided, base your answer on it. '
             'If no context is provided, answer conversationally from your general knowledge or the conversation history.'
         )
         answer_prompt = ChatPromptTemplate.from_messages(
@@ -576,6 +578,28 @@ class RagService:
 
         sources = list(source_scores.values())
         return self._strip_trailing_sources_block(str(answer.content)), sources
+
+    def _answer_from_documents_for_eval(self, question: str, selected_docs: list[Document]) -> str:
+        context_text = '\n\n'.join(
+            [
+                f"Source: {doc.metadata.get('source', 'unknown')}\nContent: {doc.page_content}"
+                for doc in selected_docs
+            ]
+        )
+
+        system_msg = (
+            'You are a precise multimodal RAG assistant that answers questions based strictly on the provided context. '
+            'Provide accurate, complete, and relevant answers. '
+            'Use all relevant information from the context to answer thoroughly. '
+        )
+        answer_prompt = ChatPromptTemplate.from_messages(
+            [
+                ('system', system_msg),
+                ('human', 'Question: {question}\n\nContext:\n{context}\n\nProvide a complete and accurate answer based on the context.'),
+            ]
+        )
+        answer = self._invoke_chat(answer_prompt.format_messages(question=question, context=context_text))
+        return self._strip_trailing_sources_block(str(answer.content))
 
     def _analyze_image_with_llm(self, image_path: Path, question: str, image_model: str | None = None) -> str:
         mime = 'image/png'

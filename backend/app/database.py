@@ -69,9 +69,27 @@ def init_db():
                     FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
                 )'''
             )
+            c.execute(
+                '''CREATE TABLE IF NOT EXISTS evaluation_runs (
+                    id BIGSERIAL PRIMARY KEY,
+                    admin_user_id BIGINT NOT NULL,
+                    dataset_path TEXT NOT NULL,
+                    output_path TEXT,
+                    samples INTEGER NOT NULL,
+                    total_rows INTEGER NOT NULL,
+                    max_rows INTEGER NOT NULL,
+                    truncated BOOLEAN NOT NULL DEFAULT FALSE,
+                    use_rerank BOOLEAN NOT NULL DEFAULT TRUE,
+                    summary_json TEXT NOT NULL,
+                    report_json TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    FOREIGN KEY (admin_user_id) REFERENCES users(id) ON DELETE CASCADE
+                )'''
+            )
             c.execute('ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE')
             c.execute('ALTER TABLE files ADD COLUMN IF NOT EXISTS content_hash TEXT')
             c.execute('ALTER TABLE conversation_messages ADD COLUMN IF NOT EXISTS image_base64 TEXT')
+            c.execute('ALTER TABLE evaluation_runs ADD COLUMN IF NOT EXISTS use_rerank BOOLEAN NOT NULL DEFAULT TRUE')
         conn.commit()
 
 
@@ -370,3 +388,78 @@ def get_recent_chat_pairs(limit: int = 100):
                 (limit,),
             )
             return [dict(row) for row in c.fetchall()]
+
+
+def create_evaluation_run(admin_user_id: int, report: dict):
+    now = datetime.now(timezone.utc).isoformat()
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute(
+                '''INSERT INTO evaluation_runs (
+                       admin_user_id, dataset_path, output_path, samples, total_rows, max_rows,
+                       truncated, use_rerank, summary_json, report_json, created_at
+                   )
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                   RETURNING id''',
+                (
+                    admin_user_id,
+                    str(report.get('dataset_path') or ''),
+                    report.get('output_path'),
+                    int(report.get('samples') or 0),
+                    int(report.get('total_rows') or 0),
+                    int(report.get('max_rows') or 0),
+                    bool(report.get('truncated', False)),
+                    bool(report.get('use_rerank', True)),
+                    json.dumps(report.get('summary') or {}),
+                    json.dumps(report),
+                    now,
+                ),
+            )
+            row = c.fetchone()
+        conn.commit()
+        return int(row['id']) if row else None
+
+
+def get_latest_evaluation_run(admin_user_id: int):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute(
+                '''SELECT * FROM evaluation_runs
+                   WHERE admin_user_id = %s
+                   ORDER BY created_at DESC, id DESC
+                   LIMIT 1''',
+                (admin_user_id,),
+            )
+            row = c.fetchone()
+            if not row:
+                return None
+            data = dict(row)
+            data['summary'] = json.loads(data.pop('summary_json') or '{}')
+            data['report'] = json.loads(data.pop('report_json') or '{}')
+            return data
+
+
+def get_admin_settings() -> dict:
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute('SELECT chat_model, image_model FROM admin_settings WHERE id = 1')
+            row = c.fetchone()
+            if row:
+                return {'chatModel': row['chat_model'], 'imageModel': row['image_model']}
+            return {'chatModel': 'gpt-4o-mini', 'imageModel': 'gpt-4o-mini'}
+
+
+def save_admin_settings(settings: dict):
+    now = datetime.now(timezone.utc).isoformat()
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute(
+                '''INSERT INTO admin_settings (id, chat_model, image_model, updated_at)
+                   VALUES (1, %s, %s, %s)
+                   ON CONFLICT (id) DO UPDATE SET
+                       chat_model = EXCLUDED.chat_model,
+                       image_model = EXCLUDED.image_model,
+                       updated_at = EXCLUDED.updated_at''',
+                (settings.get('chatModel', 'gpt-4o-mini'), settings.get('imageModel', 'gpt-4o-mini'), now),
+            )
+        conn.commit()

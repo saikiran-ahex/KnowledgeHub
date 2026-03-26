@@ -28,6 +28,17 @@ export default function Admin() {
   const [loginPassword, setLoginPassword] = useState('');
   const [authError, setAuthError] = useState('');
   const [notification, setNotification] = useState(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [settings, setSettings] = useState({
+    chatModel: 'gpt-4o-mini',
+    imageModel: 'gpt-4o-mini'
+  });
+  const [availableModels] = useState([
+    { value: 'gpt-4o-mini', label: 'GPT-4o Mini' },
+    { value: 'gpt-4.1-mini', label: 'GPT-4.1 Mini' },
+    { value: 'gpt-5-mini', label: 'GPT-5 Mini' },
+    { value: 'nemotron-nano', label: 'Nemotron Nano VL (Free)' },
+    ]);
   const [evaluationBusy, setEvaluationBusy] = useState(false);
   const [importBusy, setImportBusy] = useState(false);
   const [evaluationDatasetPath, setEvaluationDatasetPath] = useState('eval/sample_ragas_eval.jsonl');
@@ -38,6 +49,7 @@ export default function Admin() {
     if (token && isAdmin) {
       loadFiles();
       loadLatestEvaluation();
+      loadSettings();
     }
   }, [token, isAdmin]);
 
@@ -56,6 +68,42 @@ export default function Admin() {
     setNotification({ message, type });
     setTimeout(() => setNotification(null), 4000);
   }
+
+  async function loadSettings() {
+    try {
+      const res = await fetch(`${API_BASE}/admin/settings`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await readApiResponse(res);
+      if (res.ok && data) {
+        setSettings(data);
+      }
+    } catch (err) {
+      console.error('Failed to load settings:', err);
+    }
+  }
+
+  async function saveSettings() {
+    try {
+      const res = await fetch(`${API_BASE}/admin/settings`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(settings)
+      });
+      const data = await readApiResponse(res);
+      if (!res.ok) throw new Error(data.detail || 'Failed to save settings');
+      
+      showNotification('Settings saved successfully', 'success');
+      setShowSettings(false);
+    } catch (err) {
+      showNotification(`Error: ${err.message || err}`, 'error');
+    }
+  }
+
+
 
   function logout() {
     localStorage.removeItem('token');
@@ -347,6 +395,53 @@ export default function Admin() {
           <button onClick={() => setNotification(null)}>✕</button>
         </div>
       )}
+
+      {showSettings && (
+        <div className="settingsModal" onClick={() => setShowSettings(false)}>
+          <div className="settingsCard" onClick={(e) => e.stopPropagation()}>
+            <div className="settingsHeader">
+              <h2>⚙️ Model Settings</h2>
+              <button onClick={() => setShowSettings(false)} className="closeModalBtn">✕</button>
+            </div>
+
+            <div className="settingsContent">
+              <div className="settingSection">
+                <h3>Chat Model</h3>
+                <p className="settingDescription">Select the default model for user chat</p>
+                <select
+                  value={settings.chatModel}
+                  onChange={(e) => setSettings(prev => ({ ...prev, chatModel: e.target.value }))}
+                  className="settingSelect"
+                >
+                  {availableModels.map(model => (
+                    <option key={model.value} value={model.value}>{model.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="settingSection">
+                <h3>Image Model</h3>
+                <p className="settingDescription">Select the default model for image analysis</p>
+                <select
+                  value={settings.imageModel}
+                  onChange={(e) => setSettings(prev => ({ ...prev, imageModel: e.target.value }))}
+                  className="settingSelect"
+                >
+                  {availableModels.map(model => (
+                    <option key={model.value} value={model.value}>{model.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="settingsFooter">
+              <button onClick={() => setShowSettings(false)} className="cancelBtn">Cancel</button>
+              <button onClick={saveSettings} className="saveBtn">Save Settings</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <header className="adminHeader">
 
         <h1 className="adminTitle">
@@ -370,6 +465,14 @@ export default function Admin() {
         </h1>
 
         <div className="adminHeaderActions">
+
+          <button
+            onClick={() => setShowSettings(true)}
+            className="headerBtn"
+            title="Model Settings"
+          >
+            ⚙️ Settings
+          </button>
 
           <button
             onClick={toggleTheme}

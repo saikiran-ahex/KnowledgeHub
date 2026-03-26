@@ -663,18 +663,19 @@ function ChatApp() {
             >
               <IoMicSharp />
             </button>
-            {isAdhocImage ? (
+            {isAdhocImage && (
               <select
                 value={selectedImageModel}
                 onChange={(e) => setSelectedImageModel(e.target.value)}
                 className="imageModelSelect"
-                title="Image model for this ad-hoc image"
               >
                 {imageModels.map((model) => (
-                  <option key={model.value} value={model.value}>{model.label}</option>
+                  <option key={model.value} value={model.value}>
+                    {model.label}
+                  </option>
                 ))}
               </select>
-            ) : null}
+            )}
             <textarea
               rows={1}
               placeholder={isListening ? 'Listening...' : 'Type your message...'}

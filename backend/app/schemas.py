@@ -129,6 +129,7 @@ class RunEvaluationResponse(BaseModel):
     total_rows: int
     max_rows: int
     truncated: bool = False
+    created_at: str | None = None
     use_rerank: bool = True
     summary: dict[str, float | None]
     results: list[dict] = []
@@ -149,3 +150,8 @@ class CreateConversationResponse(BaseModel):
 class DeleteConversationResponse(BaseModel):
     success: bool
     message: str
+
+
+class AdminSettingsResponse(BaseModel):
+    chatModel: str = 'gpt-4o-mini'
+    imageModel: str = 'gpt-4o-mini'

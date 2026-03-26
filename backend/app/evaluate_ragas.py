@@ -132,7 +132,7 @@ def collect_prediction(
         selected_docs = candidates[: rag.settings.rerank_top_k]
         rerank_fallback_used = False
 
-    answer, _sources = rag._answer_from_documents(question, selected_docs, history=None)
+    answer = rag._answer_from_documents_for_eval(question, selected_docs)
     contexts = [doc.page_content for doc in selected_docs]
     return {
         "answer": answer,

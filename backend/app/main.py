@@ -24,7 +24,7 @@ from app.schemas import (
     ImportChatsToEvaluationRequest, ImportChatsToEvaluationResponse, AdminSettingsResponse,
     FeedbackRequest, FeedbackResponse, HumanReviewQueueItem, MarkReviewResponse,
 )
-from app.services.document_loader import SUPPORTED_EXTENSIONS
+from app.services.document_loader import SUPPORTED_EXTENSIONS, load_document
 from app import database, auth
 
 setup_logging()
@@ -237,10 +237,21 @@ async def upload(
         'page_no': None,
     }
     rag_service = get_rag_service()
-    domain, description = rag_service.profile_document(output_path)
+    preloaded_text = None
+    if ext not in {'.png', '.jpg', '.jpeg', '.webp'}:
+        try:
+            preloaded_text = load_document(output_path)
+        except Exception as exc:
+            logger.warning('Upload pre-load failed filename=%s error=%s', file.filename, exc)
+    domain, description = rag_service.profile_document(output_path, preloaded_text=preloaded_text)
     metadata['domain'] = domain
     metadata['description'] = description
-    indexed = rag_service.ingest_file(output_path, metadata=metadata, raw_bytes=payload)
+    indexed = rag_service.ingest_file(
+        output_path,
+        metadata=metadata,
+        raw_bytes=payload,
+        preloaded_text=preloaded_text,
+    )
     try:
         database.create_file_record(
             user_id=current_user['user_id'],

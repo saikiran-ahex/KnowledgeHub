@@ -4,6 +4,7 @@ import base64
 import hashlib
 import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from io import BytesIO
 from pathlib import Path
 from time import perf_counter
 from uuid import uuid4
@@ -14,6 +15,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from openai import BadRequestError
 from openai import OpenAI
+from PIL import Image
 from langchain_qdrant import QdrantVectorStore
 from qdrant_client import QdrantClient
 from qdrant_client.http import models as qmodels
@@ -257,14 +259,14 @@ class RagService:
                 return cleaned
         return None
 
-    def profile_document(self, file_path: Path) -> tuple[str | None, str | None]:
+    def profile_document(self, file_path: Path, preloaded_text: str | None = None) -> tuple[str | None, str | None]:
         ext = file_path.suffix.lower()
         source_name = file_path.name.removeprefix('chat_').removeprefix('adhoc_')
         if ext in IMAGE_EXTENSIONS:
             return 'image', f'Uploaded image asset: {source_name}'
 
         try:
-            text = load_document(file_path)
+            text = preloaded_text if preloaded_text is not None else load_document(file_path)
         except Exception as exc:
             logger.warning('Document profiling failed during load file=%s error=%s', file_path.name, exc)
             return None, None
@@ -343,14 +345,15 @@ class RagService:
         return 1
 
     def _describe_document_image(self, image_path: Path) -> str:
-        suffix = image_path.suffix.lower().lstrip('.')
         mime = 'image/png'
-        if suffix in {'jpg', 'jpeg'}:
-            mime = 'image/jpeg'
-        elif suffix == 'webp':
-            mime = 'image/webp'
-
-        encoded = base64.b64encode(image_path.read_bytes()).decode('utf-8')
+        try:
+            with Image.open(image_path) as image:
+                normalized = BytesIO()
+                image.convert('RGB').save(normalized, format='PNG')
+                encoded = base64.b64encode(normalized.getvalue()).decode('utf-8')
+        except Exception as exc:
+            logger.warning('Document image normalization failed image=%s error=%s', image_path.name, exc)
+            return ''
         image_url = f'data:{mime};base64,{encoded}'
         prompt = (
             'This image is extracted from a technical document. Please provide a detailed description of '
@@ -377,7 +380,13 @@ class RagService:
             logger.warning('Document image description failed image=%s error=%s', image_path.name, exc)
             return ''
 
-    def ingest_file(self, file_path: Path, metadata: dict | None = None, raw_bytes: bytes | None = None) -> int:
+    def ingest_file(
+        self,
+        file_path: Path,
+        metadata: dict | None = None,
+        raw_bytes: bytes | None = None,
+        preloaded_text: str | None = None,
+    ) -> int:
         ingest_start = perf_counter()
         metadata = dict(metadata or {})
         source_name = self._source_name(file_path, metadata)
@@ -397,7 +406,7 @@ class RagService:
             )
             return indexed
 
-        text = load_document(file_path)
+        text = preloaded_text if preloaded_text is not None else load_document(file_path)
         chunks = chunk_text(
             text,
             chunk_size=self.settings.chunk_size,
@@ -422,12 +431,19 @@ class RagService:
             docs.append(Document(page_content=chunk, metadata=chunk_meta))
 
         extracted_dir = self.settings.upload_dir / '_extracted' / str(metadata.get('doc_id', file_path.stem))
-        extracted_images = extract_document_images(file_path, extracted_dir)
-        for image_index, image_info in enumerate(extracted_images, start=1):
+        extracted_images = extract_document_images(
+            file_path,
+            extracted_dir,
+            min_dimension=self.settings.document_image_min_dimension,
+            min_bytes=self.settings.document_image_min_bytes,
+        )
+
+        def _describe_extracted_image(item: tuple[int, dict]) -> Document | None:
+            image_index, image_info = item
             image_path = Path(image_info['path'])
             description = self._describe_document_image(image_path)
             if not description:
-                continue
+                return None
             image_meta = {
                 'source': source_name,
                 'type': 'image',
@@ -439,7 +455,22 @@ class RagService:
                 'image_url': str(image_path),
                 **metadata,
             }
-            docs.append(Document(page_content=description, metadata=image_meta))
+            return Document(page_content=description, metadata=image_meta)
+
+        if extracted_images:
+            max_workers = max(1, min(self.settings.document_image_description_workers, len(extracted_images)))
+            logger.info(
+                'Image description started source=%s images=%s workers=%s',
+                source_name,
+                len(extracted_images),
+                max_workers,
+            )
+            with ThreadPoolExecutor(max_workers=max_workers) as ex:
+                futures = [ex.submit(_describe_extracted_image, item) for item in enumerate(extracted_images, start=1)]
+                for future in as_completed(futures):
+                    doc = future.result()
+                    if doc is not None:
+                        docs.append(doc)
 
         if not docs:
             logger.info('Ingest completed source=%s chunks=0 elapsed_ms=%s', source_name, int((perf_counter() - ingest_start) * 1000))

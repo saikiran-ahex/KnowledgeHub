@@ -28,6 +28,9 @@ class Settings(BaseSettings):
 
     chunk_size: int = 700
     chunk_overlap: int = 120
+    document_image_min_dimension: int = 32
+    document_image_min_bytes: int = 2048
+    document_image_description_workers: int = 4
 
     qdrant_url: str = 'http://qdrant:6333'
     qdrant_api_key: str = Field(default='')

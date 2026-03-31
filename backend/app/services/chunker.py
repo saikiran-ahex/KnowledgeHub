@@ -13,7 +13,7 @@ def _normalize_chunk_text(text: str) -> str:
     return text.strip()
 
 
-def chunk_text(text: str, chunk_size: int = 900, overlap: int = 150) -> list[str]:
+def chunk_text(text: str, chunk_size: int = 500, overlap: int = 100) -> list[str]:
     clean_text = _normalize_chunk_text(text)
     if not clean_text:
         logger.info('Chunking skipped: empty text')

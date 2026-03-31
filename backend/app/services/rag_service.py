@@ -168,7 +168,13 @@ class RagService:
     def _normalize_source_name(cls, source_name: str) -> str:
         normalized = source_name.removeprefix('chat_').removeprefix('adhoc_')
         match = cls._DOC_PREFIX_RE.match(normalized)
-        return match.group(1) if match else normalized
+        normalized = match.group(1) if match else normalized
+        normalized = re.sub(r'\s+', ' ', normalized).strip()
+        return normalized
+
+    @classmethod
+    def _source_matches(cls, actual_source: str, expected_source: str) -> bool:
+        return cls._normalize_source_name(actual_source).lower() == cls._normalize_source_name(expected_source).lower()
 
     @classmethod
     def _strip_trailing_sources_block(cls, text: str) -> str:
@@ -331,6 +337,7 @@ class RagService:
             page_content=description,
             metadata={
                 'source': source_name,
+                'normalized_source': self._normalize_source_name(source_name),
                 'type': 'image',
                 'chunk_type': 'image',
                 'chunk_id': f"{metadata.get('doc_id', file_path.stem)}:image:1",
@@ -420,6 +427,7 @@ class RagService:
             heading = self._guess_heading(chunk)
             chunk_meta = {
                 'source': source_name,
+                'normalized_source': self._normalize_source_name(source_name),
                 'type': 'text',
                 'chunk_type': 'text',
                 'chunk_id': f"{metadata.get('doc_id', file_path.stem)}:{idx}",
@@ -446,6 +454,7 @@ class RagService:
                 return None
             image_meta = {
                 'source': source_name,
+                'normalized_source': self._normalize_source_name(source_name),
                 'type': 'image',
                 'chunk_type': 'image',
                 'chunk_id': f"{metadata.get('doc_id', file_path.stem)}:image:{image_index}",
@@ -481,6 +490,8 @@ class RagService:
         return len(docs)
 
     def _retrieve_candidates(self, queries: list[str], retrieve_k: int, filters: dict | None = None, owner_ids: list[str] | None = None) -> list[Document]:
+        filters = dict(filters or {})
+        requested_source = str(filters.pop('source', '') or '').strip()
         qdrant_filter = self._build_qdrant_filter(filters, metadata_prefix='metadata.', owner_ids=owner_ids)
         text_candidates: list[Document] = []
 
@@ -506,6 +517,8 @@ class RagService:
                 payload = point.payload or {}
                 metadata = self._payload_metadata(payload)
                 source = self._normalize_source_name(str(self._payload_value(payload, 'source') or 'unknown'))
+                if requested_source and not self._source_matches(source, requested_source):
+                    continue
                 found.append(
                     Document(
                         page_content=str(payload.get('page_content', payload.get('text', metadata.get('text', '')))),
@@ -537,9 +550,10 @@ class RagService:
 
         candidates = self._finalize_candidates(text_candidates, limit=retrieve_k)
         logger.info(
-            'Retrieval completed text_docs=%s total=%s',
+            'Retrieval completed text_docs=%s total=%s source_filter=%s',
             len(text_candidates),
             len(candidates),
+            requested_source or None,
         )
         return candidates
 

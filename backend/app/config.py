@@ -26,8 +26,8 @@ class Settings(BaseSettings):
     upload_dir: Path = Path('data/uploads')
     max_upload_size_mb: int = 30
 
-    chunk_size: int = 700
-    chunk_overlap: int = 120
+    chunk_size: int = 500
+    chunk_overlap: int = 100
     document_image_min_dimension: int = 32
     document_image_min_bytes: int = 2048
     document_image_description_workers: int = 4

@@ -494,9 +494,9 @@ class RagService:
 
         def _search_text(query: str, query_vector: list[float]) -> list[Document]:
             logger.info('Text retrieval started query="%s"', query[:120])
-            result = self.qdrant_client.search(
+            result = self.qdrant_client.query_points(
                 collection_name=self.settings.qdrant_collection,
-                query_vector=query_vector,
+                query=query_vector,
                 limit=retrieve_k,
                 with_payload=True,
                 query_filter=qdrant_filter,

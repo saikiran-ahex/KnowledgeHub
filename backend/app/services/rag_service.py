@@ -513,7 +513,7 @@ class RagService:
                 query_filter=qdrant_filter,
             )
             found: list[Document] = []
-            for point in result or []:
+            for point in result.points:
                 payload = point.payload or {}
                 metadata = self._payload_metadata(payload)
                 source = self._normalize_source_name(str(self._payload_value(payload, 'source') or 'unknown'))

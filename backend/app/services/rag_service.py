@@ -580,7 +580,7 @@ class RagService:
                 ('system', system_msg),
                 (
                     'human',
-                    'Conversation history:\n{history}\n\nQuestion:\n{question}\n\nContext:\n{context}\n\nAnswer directly. Do not add a sources section.',
+                    'Conversation history:\n{history}\n\nQuestion:\n{question}\n\nContext:\n{context}\n\nAnswer directly and only from the context above. Do not add a sources section.',
                 ),
             ]
         )

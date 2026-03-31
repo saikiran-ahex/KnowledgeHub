@@ -11,7 +11,7 @@ from app.services.rag_service import RagService
 logger = logging.getLogger(__name__)
 
 
-QueryCategory = Literal["conversational", "out_of_scope", "ambiguous", "document_query"]
+QueryCategory = Literal["conversational", "out_of_scope", "document_query"]
 
 
 class QueryGraphState(TypedDict, total=False):
@@ -114,21 +114,21 @@ class QueryGraphService:
         system_prompt = (
             "You are a query classifier. Classify the user message into exactly one of the following four "
             "categories. Return only JSON with a single field called category. "
-            "The categories are conversational, out_of_scope, ambiguous, document_query."
+            "The categories are conversational, out_of_scope, document_query."
         )
         response = self.rag._invoke_chat(f"{system_prompt}\n\nUser message:\n{state['question']}")
         category: QueryCategory = "document_query"
         try:
             payload = json.loads(str(response.content).strip())
             parsed = str(payload.get("category") or "").strip()
-            if parsed in {"conversational", "out_of_scope", "ambiguous", "document_query"}:
+            if parsed in {"conversational", "out_of_scope", "document_query"}:
                 category = parsed  # type: ignore[assignment]
         except Exception:
             lowered = state["question"].strip().lower()
             if lowered in {"hi", "hello", "thanks", "thank you", "bye"}:
                 category = "conversational"
         state["category"] = category
-        state["fallback_flag"] = category == "ambiguous"
+        state["fallback_flag"] = category == "out_of_scope"
         return state
 
     def _direct_response(self, state: QueryGraphState) -> QueryGraphState:

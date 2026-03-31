@@ -85,10 +85,11 @@ def load_dataset(path: Path, *, max_rows: int | None = None) -> tuple[list[dict]
     parsed_rows: list[dict] = []
     total_rows = 0
     for idx, line in enumerate(path.read_text(encoding="utf-8-sig").splitlines(), start=1):
-        if not line.strip():
+        stripped_line = line.strip()
+        if not stripped_line or stripped_line.startswith("//") or stripped_line.startswith("#"):
             continue
         total_rows += 1
-        item = json.loads(line)
+        item = json.loads(stripped_line)
         question = str(item.get("question", "")).strip()
         ground_truth = str(item.get("ground_truth", "")).strip()
         if not question or not ground_truth:
@@ -147,6 +148,71 @@ def collect_prediction(
     }
 
 
+def _evaluate_with_internal_judges(rag: RagService, *, question: str, contexts: list[str], answer: str) -> dict:
+    context = "\n\n".join(contexts)
+
+    self_eval_response = rag._invoke_chat(
+        "You are a strict answer quality evaluator. Return only JSON with faithfulness, relevance, "
+        "completeness, overall, and issues. All score fields must be floats between 0 and 1.\n\n"
+        + json.dumps(
+            {
+                "question": question,
+                "context": context,
+                "answer": answer,
+            }
+        )
+    )
+
+    self_scores = {
+        "self_faithfulness": None,
+        "self_relevance": None,
+        "self_completeness": None,
+        "self_overall": None,
+    }
+    self_issues: list[str] = []
+    try:
+        payload = json.loads(str(self_eval_response.content).strip())
+        for source_key, target_key in (
+            ("faithfulness", "self_faithfulness"),
+            ("relevance", "self_relevance"),
+            ("completeness", "self_completeness"),
+            ("overall", "self_overall"),
+        ):
+            value = payload.get(source_key)
+            self_scores[target_key] = float(value) if value is not None else None
+        self_issues = [str(item) for item in (payload.get("issues") or [])]
+    except Exception:
+        pass
+
+    judge_response = rag._invoke_chat(
+        "You are an independent quality judge evaluating a question answering system. Return only "
+        "JSON with score between 0 and 1 and verdict of pass or fail.\n\n"
+        + json.dumps(
+            {
+                "question": question,
+                "context": context,
+                "answer": answer,
+            }
+        )
+    )
+    judge_score = None
+    judge_verdict = "pass"
+    try:
+        payload = json.loads(str(judge_response.content).strip())
+        raw_score = payload.get("score")
+        judge_score = float(raw_score) if raw_score is not None else None
+        judge_verdict = str(payload.get("verdict") or "pass").lower()
+    except Exception:
+        pass
+
+    return {
+        **self_scores,
+        "self_issues": self_issues,
+        "judge_score": judge_score,
+        "judge_verdict": judge_verdict,
+    }
+
+
 def build_ragas_dataset(
     rows: list[dict],
     rag: RagService,
@@ -163,6 +229,12 @@ def build_ragas_dataset(
         if row.get("doc_id"):
             filters["doc_id"] = row["doc_id"]
         prediction = collect_prediction(rag, row["question"], top_k, filters=filters, use_rerank=use_rerank)
+        internal_eval = _evaluate_with_internal_judges(
+            rag,
+            question=row["question"],
+            contexts=prediction["contexts"],
+            answer=prediction["answer"],
+        )
         ragas_records.append(
             {
                 "question": row["question"],
@@ -188,6 +260,13 @@ def build_ragas_dataset(
                 "selected_headings": prediction["selected_headings"],
                 "retrieved_contexts": prediction["contexts"],
                 "response": prediction["answer"],
+                "self_faithfulness": internal_eval["self_faithfulness"],
+                "self_relevance": internal_eval["self_relevance"],
+                "self_completeness": internal_eval["self_completeness"],
+                "self_overall": internal_eval["self_overall"],
+                "self_issues": internal_eval["self_issues"],
+                "judge_score": internal_eval["judge_score"],
+                "judge_verdict": internal_eval["judge_verdict"],
             }
         )
     return Dataset.from_list(ragas_records), diagnostics_records
@@ -257,7 +336,17 @@ def run_ragas_evaluation(
             merged[key] = value
         records.append(merged)
 
-    metric_names = ("faithfulness", "answer_relevancy", "context_precision", "context_recall")
+    metric_names = (
+        "faithfulness",
+        "answer_relevancy",
+        "context_precision",
+        "context_recall",
+        "self_faithfulness",
+        "self_relevance",
+        "self_completeness",
+        "self_overall",
+        "judge_score",
+    )
     summary = {
         name: mean([float(row[name]) for row in records if row.get(name) is not None]) if any(row.get(name) is not None for row in records) else None
         for name in metric_names

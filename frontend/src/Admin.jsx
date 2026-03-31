@@ -40,7 +40,6 @@ export default function Admin() {
     { value: 'nemotron-nano', label: 'Nemotron Nano VL (Free)' },
     ]);
   const [evaluationBusy, setEvaluationBusy] = useState(false);
-  const [importBusy, setImportBusy] = useState(false);
   const [evaluationDatasetPath, setEvaluationDatasetPath] = useState('eval/sample_ragas_eval.jsonl');
   const [evaluationResult, setEvaluationResult] = useState(null);
   const [selectedFiles, setSelectedFiles] = useState([]);
@@ -289,31 +288,6 @@ export default function Admin() {
     }
   }
 
-  async function handleImportChatsToEvaluation() {
-    setImportBusy(true);
-    try {
-      const res = await fetch(`${API_BASE}/evaluation/import-chats`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          dataset_path: evaluationDatasetPath.trim() || null,
-        }),
-      });
-      const data = await readApiResponse(res);
-      if (!res.ok) throw new Error(data.detail || 'Import failed');
-      showNotification(
-        `Imported ${data.imported} chat pairs. Skipped ${data.skipped_existing} existing and ${data.skipped_invalid} invalid rows.`,
-        'success'
-      );
-    } catch (err) {
-      showNotification(`Error: ${err.message || err}`, 'error');
-    } finally {
-      setImportBusy(false);
-    }
-  }
   async function handleDownload(fileId) {
     try {
       const res = await fetch(`${API_BASE}/files/download/${fileId}`, {
@@ -541,9 +515,6 @@ export default function Admin() {
           <div className="sectionHeader">
             <h2>Evaluation</h2>
             <div className="fileActions">
-              <button onClick={handleImportChatsToEvaluation} className="cleanupBtn" disabled={importBusy}>
-                {importBusy ? 'Importing...' : 'Import Stored Chats'}
-              </button>
               <button onClick={handleRunEvaluation} className="cleanupBtn" disabled={evaluationBusy}>
                 {evaluationBusy ? 'Running...' : 'Run Evaluation'}
               </button>

@@ -45,7 +45,6 @@ def _should_keep_extracted_image(image_bytes: bytes, *, min_dimension: int, min_
     except Exception:
         return False
 
-
 def load_document(file_path: Path) -> str:
     ext = file_path.suffix.lower()
     logger.info('Loading document path=%s ext=%s', file_path, ext)

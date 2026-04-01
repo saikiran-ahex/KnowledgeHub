@@ -407,6 +407,14 @@ async def chat(
         conversation = database.create_conversation(current_user['user_id'])
         conversation_id = conversation['id']
 
+    # Build history from persisted conversation messages (authoritative memory)
+    db_messages = conversation.get('messages', []) if conversation else []
+    history = [
+        {'role': m['role'], 'content': m['content']}
+        for m in db_messages
+        if m.get('role') in ('user', 'assistant') and m.get('content')
+    ]
+
     if file_path is not None:
         answer, sources = get_rag_service().chat(
             question=question,

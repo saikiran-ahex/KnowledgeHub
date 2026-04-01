@@ -134,11 +134,14 @@ class QueryGraphService:
     def _direct_response(self, state: QueryGraphState) -> QueryGraphState:
         category = state.get("category")
         question = state["question"]
+        history = state.get("history") or []
+        history_text = '\n'.join(f"{m.get('role', 'user')}: {m.get('content', '')}" for m in history[-10:])
+        context_prefix = f"Conversation history:\n{history_text}\n\n" if history_text else ""
         if category == "conversational":
-            response = self.rag._invoke_chat(f"Reply warmly and briefly to the user.\n\nUser message:\n{question}")
+            response = self.rag._invoke_chat(f"{context_prefix}Reply warmly and briefly to the user.\n\nUser message:\n{question}")
             state["answer"] = str(response.content).strip()
         else:
-            response = self.rag._invoke_chat(f"Answer the question from general knowledge in a concise way.\n\nQuestion:\n{question}")
+            response = self.rag._invoke_chat(f"{context_prefix}Answer the question from general knowledge in a concise way.\n\nQuestion:\n{question}")
             state["answer"] = f"{str(response.content).strip()}\n\nNote: This answer is based on general knowledge and not from your uploaded documents."
         state["sources"] = []
         state["evaluation_scores"] = {}

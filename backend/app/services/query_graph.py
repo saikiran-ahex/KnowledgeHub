@@ -11,7 +11,7 @@ from app.services.rag_service import RagService
 logger = logging.getLogger(__name__)
 
 
-QueryCategory = Literal["conversational", "out_of_scope", "ambiguous", "document_query"]
+QueryCategory = Literal["conversational", "out_of_scope", "document_query"]
 
 
 class QueryGraphState(TypedDict, total=False):
@@ -114,31 +114,34 @@ class QueryGraphService:
         system_prompt = (
             "You are a query classifier. Classify the user message into exactly one of the following four "
             "categories. Return only JSON with a single field called category. "
-            "The categories are conversational, out_of_scope, ambiguous, document_query."
+            "The categories are conversational, out_of_scope, document_query."
         )
         response = self.rag._invoke_chat(f"{system_prompt}\n\nUser message:\n{state['question']}")
         category: QueryCategory = "document_query"
         try:
             payload = json.loads(str(response.content).strip())
             parsed = str(payload.get("category") or "").strip()
-            if parsed in {"conversational", "out_of_scope", "ambiguous", "document_query"}:
+            if parsed in {"conversational", "out_of_scope", "document_query"}:
                 category = parsed  # type: ignore[assignment]
         except Exception:
             lowered = state["question"].strip().lower()
             if lowered in {"hi", "hello", "thanks", "thank you", "bye"}:
                 category = "conversational"
         state["category"] = category
-        state["fallback_flag"] = category == "ambiguous"
+        state["fallback_flag"] = category == "out_of_scope"
         return state
 
     def _direct_response(self, state: QueryGraphState) -> QueryGraphState:
         category = state.get("category")
         question = state["question"]
+        history = state.get("history") or []
+        history_text = '\n'.join(f"{m.get('role', 'user')}: {m.get('content', '')}" for m in history[-10:])
+        context_prefix = f"Conversation history:\n{history_text}\n\n" if history_text else ""
         if category == "conversational":
-            response = self.rag._invoke_chat(f"Reply warmly and briefly to the user.\n\nUser message:\n{question}")
+            response = self.rag._invoke_chat(f"{context_prefix}Reply warmly and briefly to the user.\n\nUser message:\n{question}")
             state["answer"] = str(response.content).strip()
         else:
-            response = self.rag._invoke_chat(f"Answer the question from general knowledge in a concise way.\n\nQuestion:\n{question}")
+            response = self.rag._invoke_chat(f"{context_prefix}Answer the question from general knowledge in a concise way.\n\nQuestion:\n{question}")
             state["answer"] = f"{str(response.content).strip()}\n\nNote: This answer is based on general knowledge and not from your uploaded documents."
         state["sources"] = []
         state["evaluation_scores"] = {}

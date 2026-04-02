@@ -3,6 +3,7 @@ import mimetypes
 from io import BytesIO
 from pathlib import Path
 
+import fitz
 import pandas as pd
 import textract
 from docx import Document as DocxDocument
@@ -99,19 +100,23 @@ def extract_document_images(
     output_dir.mkdir(parents=True, exist_ok=True)
 
     if ext == '.pdf':
-        reader = PdfReader(str(file_path))
-        for page_no, page in enumerate(reader.pages, start=1):
-            page_images = list(getattr(page, 'images', []) or [])
-            for index, image in enumerate(page_images, start=1):
+        try:
+            pdf = fitz.open(str(file_path))
+        except Exception as exc:
+            logger.warning('fitz could not open pdf file=%s error=%s', file_path.name, exc)
+            return extracted
+        for page_no, page in enumerate(pdf, start=1):
+            try:
+                image_list = page.get_images(full=True)
+            except Exception as exc:
+                logger.warning('Skipping images on pdf page file=%s page=%s error=%s', file_path.name, page_no, exc)
+                continue
+            for index, img in enumerate(image_list, start=1):
                 try:
-                    image_bytes = getattr(image, 'data', None)
+                    xref = img[0]
+                    base_image = pdf.extract_image(xref)
+                    image_bytes = base_image.get('image')
                     if not image_bytes:
-                        logger.warning(
-                            'Skipping pdf image with no data file=%s page=%s image_index=%s',
-                            file_path.name,
-                            page_no,
-                            index,
-                        )
                         continue
                     if not _should_keep_extracted_image(
                         image_bytes,
@@ -120,7 +125,7 @@ def extract_document_images(
                     ):
                         skipped_small += 1
                         continue
-                    suffix = Path(getattr(image, 'name', '')).suffix.lower() or '.png'
+                    suffix = f".{base_image.get('ext', 'png')}"
                     if suffix not in IMAGE_EXTENSIONS:
                         suffix = '.png'
                     image_path = output_dir / f'{file_path.stem}_page_{page_no}_image_{index}{suffix}'
@@ -129,16 +134,12 @@ def extract_document_images(
                 except Exception as exc:
                     logger.warning(
                         'Skipping problematic pdf image file=%s page=%s image_index=%s error=%s',
-                        file_path.name,
-                        page_no,
-                        index,
-                        exc,
+                        file_path.name, page_no, index, exc,
                     )
+        pdf.close()
         logger.info(
             'Extracted pdf images file=%s images=%s skipped_small=%s',
-            file_path.name,
-            len(extracted),
-            skipped_small,
+            file_path.name, len(extracted), skipped_small,
         )
         return extracted
 
@@ -171,9 +172,7 @@ def extract_document_images(
             extracted.append({'path': image_path, 'page_no': None})
         logger.info(
             'Extracted docx images file=%s images=%s skipped_small=%s',
-            file_path.name,
-            len(extracted),
-            skipped_small,
+            file_path.name, len(extracted), skipped_small,
         )
         return extracted
 

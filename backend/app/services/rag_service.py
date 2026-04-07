@@ -99,6 +99,7 @@ class RagService:
             if 'temperature' in msg and 'Only the default (1) value is supported' in msg:
                 logger.warning('Provider rejected custom temperature; retrying with model default temperature')
                 return self.chat_llm_default_temp.invoke(payload)
+        
             raise
 
     def _ensure_collections(self) -> None:
@@ -113,6 +114,14 @@ class RagService:
                 vectors_config=qmodels.VectorParams(size=text_dim, distance=qmodels.Distance.COSINE),
             )
             logger.info('Qdrant text collection created name=%s dim=%s', self.settings.qdrant_collection, text_dim)
+
+        if not self.qdrant_client.collection_exists(self.settings.qdrant_chat_collection):
+            dim = len(self.embedding_model.embed_query('dimension probe'))
+            self.qdrant_client.create_collection(
+                collection_name=self.settings.qdrant_chat_collection,
+                vectors_config=qmodels.VectorParams(size=dim, distance=qmodels.Distance.COSINE),
+            )
+            logger.info('Qdrant chat collection created name=%s dim=%s', self.settings.qdrant_chat_collection, dim)
 
     def _expand_query(self, question: str) -> list[str]:
         logger.info('Query expansion started')
@@ -265,6 +274,55 @@ class RagService:
                 return cleaned
         return None
 
+    def index_chat_turn(self, conversation_id: str, user_id: str, question: str, answer: str, sources: list[str]) -> None:
+        """Embed and store a Q&A turn in the chat history Qdrant collection."""
+        text = f'User: {question}\nAssistant: {answer}'
+        try:
+            vector = self.embedding_model.embed_query(text)
+            self.qdrant_client.upsert(
+                collection_name=self.settings.qdrant_chat_collection,
+                points=[
+                    qmodels.PointStruct(
+                        id=uuid4().hex,
+                        vector=vector,
+                        payload={
+                            'conversation_id': conversation_id,
+                            'user_id': user_id,
+                            'question': question,
+                            'answer': answer,
+                            'sources': sources,
+                        },
+                    )
+                ],
+            )
+            logger.info('Chat turn indexed conversation_id=%s', conversation_id)
+        except Exception as exc:
+            logger.warning('Chat turn indexing failed conversation_id=%s error=%s', conversation_id, exc)
+
+    def retrieve_chat_history(self, question: str, user_id: str, conversation_id: str | None = None, top_k: int = 3) -> list[dict]:
+        """Retrieve semantically relevant past turns for this user from Qdrant (cross-conversation)."""
+        try:
+            vector = self.embedding_model.embed_query(question)
+            must = [qmodels.FieldCondition(key='user_id', match=qmodels.MatchValue(value=str(user_id)))]
+            results = self.qdrant_client.search(
+                collection_name=self.settings.qdrant_chat_collection,
+                query_vector=vector,
+                limit=top_k,
+                with_payload=True,
+                score_threshold=0.75,
+                query_filter=qmodels.Filter(must=must),
+            )
+            turns = []
+            for point in results:
+                p = point.payload or {}
+                turns.append({'role': 'user', 'content': p.get('question', '')})
+                turns.append({'role': 'assistant', 'content': p.get('answer', ''), 'sources': p.get('sources', [])})
+            logger.info('Chat history retrieved conversation_id=%s turns=%s', conversation_id, len(results))
+            return turns
+        except Exception as exc:
+            logger.warning('Chat history retrieval failed conversation_id=%s error=%s', conversation_id, exc)
+            return []
+
     def profile_document(self, file_path: Path, preloaded_text: str | None = None) -> tuple[str | None, str | None]:
         ext = file_path.suffix.lower()
         source_name = file_path.name.removeprefix('chat_').removeprefix('adhoc_')
@@ -283,7 +341,7 @@ class RagService:
 
         prompt = (
             'Read this document excerpt and return strictly JSON with two fields: '
-            '"domain" as a short phrase for the document domain, and "description" as one sentence '
+            '"domain" as a short phrase for the document domain, and "description" in 3-5 sentences '
             'summarizing the document. Do not include markdown.'
         )
         try:
@@ -516,7 +574,10 @@ class RagService:
             for point in result.points:
                 payload = point.payload or {}
                 metadata = self._payload_metadata(payload)
+                print("*********",metadata.get('source'))
                 source = self._normalize_source_name(str(self._payload_value(payload, 'source') or 'unknown'))
+                # print("#########",source)
+                logger.info('Qdrant point score=%s source=%s', point.score, source)
                 if requested_source and not self._source_matches(source, requested_source):
                     continue
                 found.append(
@@ -559,7 +620,14 @@ class RagService:
 
     def _answer_from_documents(self, question: str, selected_docs: list[Document], history: list[dict] | None = None) -> tuple[str, list[dict]]:
         history = history or []
-        history_text = '\n'.join([f"{item.get('role', 'user')}: {item.get('content', '')}" for item in history[-8:]])
+        # Preserve summary system message (always first), slice only the rest
+        summary_msgs = [m for m in history if m.get('role') == 'system']
+        non_system = [m for m in history if m.get('role') != 'system']
+        history_text = '\n'.join([
+            f"{item.get('role', 'user').capitalize()}: {item.get('content', '')}"
+            for item in summary_msgs + non_system[-12:]
+            if item.get('role') in ('user', 'assistant', 'system')
+        ])
         context_text = '\n\n'.join(
             [
                 f"Source: {doc.metadata.get('source', 'unknown')}\nType: {doc.metadata.get('type', 'text')}\nContent: {doc.page_content}"

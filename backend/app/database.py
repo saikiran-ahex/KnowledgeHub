@@ -142,6 +142,7 @@ def init_db():
             c.execute('ALTER TABLE files ADD COLUMN IF NOT EXISTS uploaded_by BIGINT')
             c.execute('ALTER TABLE files ADD COLUMN IF NOT EXISTS is_global BOOLEAN NOT NULL DEFAULT TRUE')
             c.execute('UPDATE files SET uploaded_by = user_id WHERE uploaded_by IS NULL')
+            c.execute('ALTER TABLE conversations ADD COLUMN IF NOT EXISTS history_summary TEXT')
             c.execute('ALTER TABLE conversation_messages ADD COLUMN IF NOT EXISTS image_base64 TEXT')
             c.execute('ALTER TABLE conversation_messages ADD COLUMN IF NOT EXISTS ragas_score DOUBLE PRECISION')
             c.execute('ALTER TABLE conversation_messages ADD COLUMN IF NOT EXISTS judge_score DOUBLE PRECISION')
@@ -511,6 +512,38 @@ def mark_human_reviewed(queue_id: int):
         with conn.cursor() as c:
             c.execute('UPDATE human_review_queue SET reviewed = TRUE WHERE id = %s', (queue_id,))
         conn.commit()
+
+
+def get_conversation_summary(conversation_id: str) -> str:
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute('SELECT history_summary FROM conversations WHERE id = %s', (conversation_id,))
+            row = c.fetchone()
+            return (row['history_summary'] or '') if row else ''
+
+
+def save_conversation_summary(conversation_id: str, summary: str):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute(
+                'UPDATE conversations SET history_summary = %s WHERE id = %s',
+                (summary, conversation_id),
+            )
+        conn.commit()
+
+
+def get_recent_conversation_messages(conversation_id: str, limit: int = 20) -> list[dict]:
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute(
+                '''SELECT role, content FROM conversation_messages
+                   WHERE conversation_id = %s
+                   ORDER BY created_at DESC, id DESC
+                   LIMIT %s''',
+                (conversation_id, limit),
+            )
+            rows = c.fetchall()
+            return [{'role': r['role'], 'content': r['content']} for r in reversed(rows)]
 
 
 def count_conversation_messages(conversation_id: str) -> int:

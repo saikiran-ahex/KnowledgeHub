@@ -36,6 +36,7 @@ class Settings(BaseSettings):
     qdrant_api_key: str = Field(default='')
     qdrant_collection: str = 'rag_chunks'
     qdrant_image_collection: str = 'rag_image_chunks'
+    qdrant_chat_collection: str = 'chat_history'
 
     retrieval_top_k: int = 12
     rerank_top_k: int = 4
@@ -61,6 +62,7 @@ class Settings(BaseSettings):
     cohere_rerank_model: str = 'rerank-v3.5'
 
     jwt_secret_key: str = Field(default='change-this-secret-key-in-production')
+    redis_url: str = Field(default='redis://redis:6379/0')
 
     @property
     def adhoc_image_model_options(self) -> tuple[dict[str, str], ...]:

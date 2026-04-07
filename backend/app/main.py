@@ -1,4 +1,6 @@
+import asyncio
 import base64
+from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
 from datetime import datetime, timezone
 import json
@@ -9,6 +11,7 @@ from time import perf_counter
 from uuid import uuid4
 
 import psycopg
+import redis as redis_lib
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 import mimetypes
@@ -31,6 +34,22 @@ setup_logging()
 logger = logging.getLogger(__name__)
 settings = get_settings()
 ALLOWED_ADHOC_IMAGE_MODELS = {str(item['value']) for item in settings.adhoc_image_model_options}
+
+
+@lru_cache(maxsize=1)
+def get_redis() -> redis_lib.Redis:
+    return redis_lib.from_url(settings.redis_url, decode_responses=True)
+
+
+_bg_executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix='chat_bg')
+
+
+def _estimate_tokens(messages: list[dict]) -> int:
+    """Rough token estimate: ~4 chars per token."""
+    return sum(len(m.get('content', '')) for m in messages) // 4
+
+
+_CONVERSATIONAL_PATTERNS = {'hi', 'hello', 'hey', 'ok', 'okay', 'thanks', 'thank you', 'yo', 'sup', 'bye'}
 
 app = FastAPI(title=settings.app_name)
 
@@ -407,13 +426,55 @@ async def chat(
         conversation = database.create_conversation(current_user['user_id'])
         conversation_id = conversation['id']
 
-    # Build history from persisted conversation messages (authoritative memory)
-    db_messages = conversation.get('messages', []) if conversation else []
-    history = [
-        {'role': m['role'], 'content': m['content']}
-        for m in db_messages
-        if m.get('role') in ('user', 'assistant') and m.get('content')
-    ]
+    # Load history from Redis; fall back to DB if Redis is empty or expired
+    _redis_key = f'conv:{conversation_id}:history'
+    _loaded_from_redis = False
+    try:
+        _raw = get_redis().get(_redis_key)
+        _stored = json.loads(_raw) if _raw else {}
+        _summary = _stored.get('summary', '')
+        _recent = _stored.get('messages', [])
+        _loaded_from_redis = bool(_recent)
+        logger.info('Redis history loaded key=%s summary=%s messages=%s', _redis_key, bool(_summary), len(_recent))
+    except Exception as exc:
+        logger.warning('Redis history read failed conversation_id=%s error=%s', conversation_id, exc)
+        _summary, _recent = '', []
+
+    if not _recent:
+        try:
+            _recent = database.get_recent_conversation_messages(conversation_id, limit=20)
+            _summary = database.get_conversation_summary(conversation_id)
+            logger.info('Redis miss — history rebuilt from DB conversation_id=%s messages=%s summary=%s', conversation_id, len(_recent), bool(_summary))
+        except Exception as exc:
+            logger.warning('DB history fallback failed conversation_id=%s error=%s', conversation_id, exc)
+            _recent = []
+
+    # Last resort: use client-sent history_json if server-side history is still empty
+    if not _recent and history:
+        _recent = [m for m in history if m.get('role') in ('user', 'assistant')]
+        logger.info('Client history_json used as fallback conversation_id=%s messages=%s', conversation_id, len(_recent))
+
+    # Semantic retrieval: only for non-trivial queries (intent-based memory usage)
+    _is_trivial = question.strip().lower() in _CONVERSATIONAL_PATTERNS or len(question.strip()) < 15
+    _semantic_turns: list[dict] = []
+    if not _is_trivial:
+        _semantic_turns = get_rag_service().retrieve_chat_history(
+            question, str(current_user['user_id'])
+        )
+
+    # Build history: summary + semantic past turns (score-filtered, semantic dedup) + recent window
+    _summary_msgs: list[dict] = []
+    if _summary:
+        _summary_msgs = [{'role': 'system', 'content': f'Earlier conversation summary: {_summary}'}]
+    # Semantic dedup: skip injected turns whose content overlaps significantly with recent window
+    _recent_words = {w for m in _recent for w in m.get('content', '').lower().split()}
+    _filtered_semantic: list[dict] = []
+    for turn in _semantic_turns:
+        turn_words = set(turn.get('content', '').lower().split())
+        # Guard: short turns are hard to dedup reliably — always include them
+        if len(turn_words) < 6 or len(turn_words & _recent_words) / max(len(turn_words), 1) < 0.6:
+            _filtered_semantic.append(turn)
+    history = _summary_msgs + _filtered_semantic + _recent
 
     if file_path is not None:
         answer, sources = get_rag_service().chat(
@@ -458,6 +519,48 @@ async def chat(
     if review_flag:
         database.enqueue_human_review(assistant_message_id, str(review_reason or 'Flagged by query graph evaluation'))
 
+    # Update Redis: append new turn, token-based trim, async summarize + index
+    _source_names = [s.get('source') for s in sources if s.get('source')]
+    _recent.append({'role': 'user', 'content': question})
+    _recent.append({'role': 'assistant', 'content': answer, 'sources': _source_names})
+
+    # Token-based trimming: only summarize if we're tracking a live Redis window
+    # (not a cold DB reload — those turns are already covered by the existing summary)
+    _TOKEN_BUDGET = 1000
+    _turns_to_summarize = []
+    if _loaded_from_redis:
+        while _estimate_tokens(_recent) > _TOKEN_BUDGET and len(_recent) >= 2:
+            _turns_to_summarize.extend(_recent[:2])
+            _recent = _recent[2:]
+
+    if _turns_to_summarize:
+        dropped_text = '\n'.join(f"{m['role']}: {m['content']}" for m in _turns_to_summarize)
+        prompt = (
+            f'Existing summary:\n{_summary}\n\n' if _summary else ''
+        ) + f'New conversation turns:\n{dropped_text}\n\nUpdate the summary by incorporating the new turns. Keep the summary under 200 words. Be concise.'
+        try:
+            _summary = str(get_rag_service()._invoke_chat(prompt).content).strip()
+            database.save_conversation_summary(conversation_id, _summary)
+            logger.info('Rolling summary updated and persisted conversation_id=%s', conversation_id)
+        except Exception as exc:
+            logger.warning('Rolling summary failed conversation_id=%s error=%s', conversation_id, exc)
+
+    try:
+        get_redis().setex(_redis_key, 3600, json.dumps({'summary': _summary, 'messages': _recent}))
+        logger.info('Redis history saved key=%s tokens~=%s messages=%s', _redis_key, _estimate_tokens(_recent), len(_recent))
+    except Exception as exc:
+        logger.warning('Redis history write failed conversation_id=%s error=%s', conversation_id, exc)
+
+    # Async: index chat turn in background — does not block response
+    # Summarization is intentionally NOT done here — summary is only updated
+    # when turns are actually dropped from the window (see token-based trim above)
+    def _bg_tasks():
+        get_rag_service().index_chat_turn(
+            conversation_id, str(current_user['user_id']), question, answer, _source_names
+        )
+
+    _bg_executor.submit(_bg_tasks)
+
     elapsed_ms = int((perf_counter() - start) * 1000)
     logger.info('Chat completed sources=%s elapsed_ms=%s', len(sources), elapsed_ms)
     return ChatResponse(
@@ -486,6 +589,10 @@ def delete_conversation(conversation_id: str, current_user: dict = Depends(get_c
     conversation = database.delete_conversation(conversation_id, current_user['user_id'])
     if not conversation:
         raise HTTPException(status_code=404, detail='Conversation not found')
+    try:
+        get_redis().delete(f'conv:{conversation_id}:history')
+    except Exception as exc:
+        logger.warning('Redis history delete failed conversation_id=%s error=%s', conversation_id, exc)
     return DeleteConversationResponse(success=True, message='Conversation deleted successfully')
 
 @app.get('/files', response_model=list[FileRecord])

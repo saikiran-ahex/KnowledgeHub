@@ -105,16 +105,26 @@ class QueryGraphService:
         return "hyde"
 
     def _route_after_self_eval(self, state: QueryGraphState) -> str:
-        if state.get("review_flag") and state.get("retry_count", 0) < 2:
+        if (
+            state.get("review_flag")
+            and state.get("retry_count", 0) < 1
+            and state.get("candidates")
+        ):
             state["retry_count"] = state.get("retry_count", 0) + 1
             return "retrieve"
         return "judge"
 
     def _classify_query(self, state: QueryGraphState) -> QueryGraphState:
+        docs = database.list_documents()
+        doc_metadata = [(row.get("domain"), row.get("description")) for row in docs]
+        
         system_prompt = (
-            "You are a query classifier. Classify the user message into exactly one of the following four "
+            "You are a query classifier. Classify the user message into exactly one of the following "
             "categories. Return only JSON with a single field called category. "
-            "The categories are conversational, out_of_scope, document_query."
+            "If the question is conversational (hi, hello, thanks, thank you, bye, etc...), choose conversational. "
+            "If the question is about things outside the scope of the documents, choose out_of_scope. "
+            "If the question is about the documents, choose document_query. "
+            f"The categories are conversational, out_of_scope, document_query.{(doc_metadata)}\n\n"
         )
         response = self.rag._invoke_chat(f"{system_prompt}\n\nUser message:\n{state['question']}")
         category: QueryCategory = "document_query"
@@ -129,20 +139,24 @@ class QueryGraphService:
                 category = "conversational"
         state["category"] = category
         state["fallback_flag"] = category == "out_of_scope"
+        logger.info('Query classified question="%s" category=%s', state['question'][:80], category)
         return state
 
     def _direct_response(self, state: QueryGraphState) -> QueryGraphState:
         category = state.get("category")
         question = state["question"]
         history = state.get("history") or []
-        history_text = '\n'.join(f"{m.get('role', 'user')}: {m.get('content', '')}" for m in history[-10:])
+        history_text = '\n'.join(
+            f"{m.get('role', 'user').capitalize()}: {m.get('content', '')}"
+            for m in history[-12:]
+            if m.get('role') in ('user', 'assistant', 'system')
+        )
         context_prefix = f"Conversation history:\n{history_text}\n\n" if history_text else ""
         if category == "conversational":
             response = self.rag._invoke_chat(f"{context_prefix}Reply warmly and briefly to the user.\n\nUser message:\n{question}")
             state["answer"] = str(response.content).strip()
         else:
-            response = self.rag._invoke_chat(f"{context_prefix}Answer the question from general knowledge in a concise way.\n\nQuestion:\n{question}")
-            state["answer"] = f"{str(response.content).strip()}\n\nNote: This answer is based on general knowledge and not from your uploaded documents."
+            state["answer"] = "I'm sorry, I couldn't find any relevant information in the uploaded documents to answer your question. Please try rephrasing or ask about a different topic."
         state["sources"] = []
         state["evaluation_scores"] = {}
         return state
@@ -162,6 +176,7 @@ class QueryGraphService:
     def _route_documents(self, state: QueryGraphState) -> QueryGraphState:
         documents = database.list_documents()
         if not documents:
+            logger.info('Document routing skipped: no documents in library')
             state["routed_doc_ids"] = []
             return state
 
@@ -189,6 +204,7 @@ class QueryGraphService:
             doc_ids = [str(item) for item in payload.get("relevant_doc_ids", []) if item]
         except Exception:
             doc_ids = []
+        logger.info('Document routing completed total_docs=%s routed_doc_ids=%s', len(documents), doc_ids)
         state["routed_doc_ids"] = doc_ids
         return state
 
@@ -198,12 +214,14 @@ class QueryGraphService:
         if len(routed_doc_ids) == 1:
             filters["doc_id"] = routed_doc_ids[0]
         queries = list(dict.fromkeys(state.get("search_queries") or [state["question"]]))
+        logger.info('Retrieve started queries=%s filters=%s owner_ids=%s', queries, filters, state.get("owner_ids"))
         candidates = self.rag._retrieve_candidates(
             queries,
             state["top_k"],
             filters=filters,
             owner_ids=state.get("owner_ids") or None,
         )
+        logger.info('Retrieve completed candidates=%s', len(candidates))
         state["filters"] = filters
         state["candidates"] = candidates
         return state
@@ -264,7 +282,9 @@ class QueryGraphService:
             issues = []
         state["evaluation_scores"] = scores
         overall = scores.get("overall")
-        if overall is not None and overall < 0.7:
+        if not (state.get("selected_docs") or []):
+            state["review_flag"] = False
+        elif overall is not None and overall < 0.7:
             state["review_flag"] = True
             state["review_reason"] = "; ".join(str(item) for item in issues[:3]) or "Low self-evaluation score"
         return state

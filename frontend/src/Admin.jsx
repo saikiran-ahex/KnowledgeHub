@@ -527,10 +527,10 @@ export default function Admin() {
                 <div className="evalMeta">Only the latest {evaluationResult.max_rows} rows were evaluated.</div>
               ) : null}
               <div className="evalGrid">
-                {Object.entries(evaluationResult.summary || {}).map(([name, value]) => (
+                {['faithfulness', 'answer_relevancy', 'context_precision', 'context_recall'].map((name) => (
                   <div key={name} className="evalCard">
-                    <div className="evalLabel">{name}</div>
-                    <div className="evalValue">{formatMetricPercent(value)}</div>
+                    <div className="evalLabel">{name.replace(/_/g, ' ')}</div>
+                    <div className="evalValue">{formatMetricPercent((evaluationResult.summary || {})[name])}</div>
                   </div>
                 ))}
               </div>

@@ -599,6 +599,13 @@ def get_recent_chat_pairs(limit: int = 100):
             return [dict(row) for row in c.fetchall()]
 
 
+def _evaluation_benchmark_score(report: dict) -> float:
+    summary = report.get('summary') or {}
+    metric_names = ('faithfulness', 'answer_relevancy', 'context_precision', 'context_recall')
+    scores = [float(summary[name]) for name in metric_names if summary.get(name) is not None]
+    return sum(scores) / len(scores) if scores else 0.0
+
+
 def create_evaluation_run(admin_user_id: int, report: dict):
     now = datetime.now(timezone.utc).isoformat()
     with get_db() as conn:
@@ -629,6 +636,16 @@ def create_evaluation_run(admin_user_id: int, report: dict):
         return int(row['id']) if row else None
 
 
+def create_evaluation_run_if_best(admin_user_id: int, report: dict):
+    new_score = _evaluation_benchmark_score(report)
+    existing = get_best_evaluation_run(admin_user_id)
+    if existing is not None:
+        existing_score = _evaluation_benchmark_score(existing.get('report') or {})
+        if new_score <= existing_score:
+            return None
+    return create_evaluation_run(admin_user_id, report)
+
+
 def get_latest_evaluation_run(admin_user_id: int):
     with get_db() as conn:
         with conn.cursor() as c:
@@ -646,6 +663,29 @@ def get_latest_evaluation_run(admin_user_id: int):
             data['summary'] = json.loads(data.pop('summary_json') or '{}')
             data['report'] = json.loads(data.pop('report_json') or '{}')
             return data
+
+
+def get_best_evaluation_run(admin_user_id: int):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute('SELECT * FROM evaluation_runs WHERE admin_user_id = %s', (admin_user_id,))
+            rows = []
+            for row in c.fetchall():
+                data = dict(row)
+                data['summary'] = json.loads(data.pop('summary_json') or '{}')
+                data['report'] = json.loads(data.pop('report_json') or '{}')
+                rows.append(data)
+    if not rows:
+        return None
+    rows.sort(
+        key=lambda row: (
+            _evaluation_benchmark_score(row.get('report') or {}),
+            row.get('created_at') or '',
+            int(row.get('id') or 0),
+        ),
+        reverse=True,
+    )
+    return rows[0]
 
 
 def get_admin_settings() -> dict:

@@ -105,11 +105,6 @@ PostgreSQL stores:
 
 Qdrant currently stores the main text retrieval collection.
 
-Note:
-
-- the code still keeps a legacy image-collection cleanup path so older image vectors can be cleaned up safely
-- new ingestion and retrieval are now text-description based rather than CLIP-based
-
 ### Disk
 
 Local disk stores:

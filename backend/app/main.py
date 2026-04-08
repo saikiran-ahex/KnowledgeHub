@@ -680,13 +680,13 @@ def run_evaluation(req: RunEvaluationRequest, current_user: dict = Depends(get_a
         logger.exception('Evaluation failed dataset=%s', dataset_path)
         raise HTTPException(status_code=500, detail=f'Evaluation failed: {exc}') from exc
 
-    database.create_evaluation_run(current_user['user_id'], report)
+    database.create_evaluation_run_if_best(current_user['user_id'], report)
     return RunEvaluationResponse(success=True, **report)
 
 
 @app.get('/evaluation/latest', response_model=RunEvaluationResponse)
 def get_latest_evaluation(current_user: dict = Depends(get_admin_user)) -> RunEvaluationResponse:
-    db_run = database.get_latest_evaluation_run(current_user['user_id'])
+    db_run = database.get_best_evaluation_run(current_user['user_id'])
     if db_run and isinstance(db_run.get('report'), dict):
         report = dict(db_run['report'])
         report['created_at'] = db_run.get('created_at')
@@ -702,7 +702,7 @@ def get_latest_evaluation(current_user: dict = Depends(get_admin_user)) -> RunEv
 
     if not report:
         raise HTTPException(status_code=404, detail='No saved evaluation report found')
-    database.create_evaluation_run(current_user['user_id'], report)
+    database.create_evaluation_run_if_best(current_user['user_id'], report)
     return RunEvaluationResponse(success=True, **report)
 
 

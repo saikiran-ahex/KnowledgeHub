@@ -120,9 +120,23 @@ def collect_prediction(
     queries.extend([q for q in rag._expand_query(question) if q.lower() != question.lower()])
     effective_filters = dict(filters or {})
     admin_owner_ids = list(dict.fromkeys([str(user_id) for user_id in database.get_admin_user_ids()] + ["admin"]))
+    fallback_without_source = False
 
     retrieve_k = top_k or rag.settings.retrieval_top_k
     candidates = rag._retrieve_candidates(queries, retrieve_k, filters=effective_filters, owner_ids=admin_owner_ids)
+    if not candidates and effective_filters.get("source"):
+        fallback_filters = dict(effective_filters)
+        fallback_filters.pop("source", None)
+        fallback_candidates = rag._retrieve_candidates(
+            queries,
+            retrieve_k,
+            filters=fallback_filters,
+            owner_ids=admin_owner_ids,
+        )
+        if fallback_candidates:
+            candidates = fallback_candidates
+            effective_filters = fallback_filters
+            fallback_without_source = True
     if use_rerank and rag.reranker is not None:
         try:
             selected_docs, rerank_fallback_used = rag._rerank_documents(candidates, question)
@@ -141,6 +155,7 @@ def collect_prediction(
         "expanded_queries": queries,
         "filters": effective_filters,
         "candidate_count": len(candidates),
+        "fallback_without_source": fallback_without_source,
         "rerank_fallback_used": rerank_fallback_used,
         "selected_sources": [doc.metadata.get("source") for doc in selected_docs],
         "selected_doc_ids": [doc.metadata.get("doc_id") for doc in selected_docs],
@@ -253,6 +268,7 @@ def build_ragas_dataset(
                 "filters": prediction["filters"],
                 "expanded_queries": prediction["expanded_queries"],
                 "candidate_count": prediction["candidate_count"],
+                "fallback_without_source": prediction["fallback_without_source"],
                 "rerank_used": use_rerank,
                 "rerank_fallback_used": prediction["rerank_fallback_used"],
                 "selected_sources": prediction["selected_sources"],

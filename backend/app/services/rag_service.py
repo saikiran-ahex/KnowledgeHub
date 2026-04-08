@@ -178,6 +178,14 @@ class RagService:
         normalized = source_name.removeprefix('chat_').removeprefix('adhoc_')
         match = cls._DOC_PREFIX_RE.match(normalized)
         normalized = match.group(1) if match else normalized
+        normalized = (
+            normalized
+            .replace('\u2014', '-')
+            .replace('\u2013', '-')
+            .replace('\u2212', '-')
+            .replace('\u2010', '-')
+            .replace('\u2011', '-')
+        )
         normalized = re.sub(r'\s+', ' ', normalized).strip()
         return normalized
 
@@ -563,20 +571,18 @@ class RagService:
 
         def _search_text(query: str, query_vector: list[float]) -> list[Document]:
             logger.info('Text retrieval started query="%s"', query[:120])
-            result = self.qdrant_client.query_points(
+            result = self.qdrant_client.search(
                 collection_name=self.settings.qdrant_collection,
-                query=query_vector,
+                query_vector=query_vector,
                 limit=retrieve_k,
                 with_payload=True,
                 query_filter=qdrant_filter,
             )
             found: list[Document] = []
-            for point in result.points:
+            for point in result or []:
                 payload = point.payload or {}
                 metadata = self._payload_metadata(payload)
-                print("*********",metadata.get('source'))
                 source = self._normalize_source_name(str(self._payload_value(payload, 'source') or 'unknown'))
-                # print("#########",source)
                 logger.info('Qdrant point score=%s source=%s', point.score, source)
                 if requested_source and not self._source_matches(source, requested_source):
                     continue

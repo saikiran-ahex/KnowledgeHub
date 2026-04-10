@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     admin_password: str = Field(default='')
 
     upload_dir: Path = Path('data/uploads')
-    max_upload_size_mb: int = 30
+    max_upload_size_mb: int = 100
 
     chunk_size: int = 500
     chunk_overlap: int = 100

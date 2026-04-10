@@ -594,6 +594,49 @@ body {
   min-width: fit-content;
 }
 
+.responseContent {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.responseParagraph {
+  margin: 0;
+  line-height: 1.7;
+}
+
+.responseList {
+  margin: 0 !important;
+  padding-left: 28px !important;
+  line-height: 1.8;
+  list-style-type: decimal !important;
+  list-style-position: outside !important;
+}
+
+.responseList li {
+  margin-bottom: 8px;
+  padding-left: 8px;
+  display: list-item !important;
+  list-style-type: decimal !important;
+}
+
+.responseList li:last-child {
+  margin-bottom: 0;
+}
+
+.boldText {
+  font-weight: 600;
+}
+
+.inlineCode {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-secondary);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9em;
+}
+
 .loader {
   display: flex;
   gap: 6px;

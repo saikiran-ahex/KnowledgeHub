@@ -33,12 +33,38 @@ async function readApiResponse(res) {
 function Sources({ sources }) {
   if (!sources?.length) return null;
   return (
-    <div className="sources">
-      {sources.map((s, i) => (
-        <span key={`${s.source}-${i}`} className="chip">
-          {s.source} ({Number(s.score || 0).toFixed(2)})
-        </span>
-      ))}
+    <div className="sourcesContainer">
+      <div className="sourcesHeader">
+        <svg 
+          className="sourcesIcon" 
+          xmlns="http://www.w3.org/2000/svg" 
+          width="14" 
+          height="14" 
+          viewBox="0 0 24 24" 
+          fill="none" 
+          stroke="currentColor" 
+          strokeWidth="2" 
+          strokeLinecap="round" 
+          strokeLinejoin="round"
+        >
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+        </svg>
+        <span className="sourcesLabel">Sources ({sources.length})</span>
+      </div>
+      <div className="sourcesList">
+        {sources.map((s, i) => (
+          <div key={`${s.source}-${i}`} className="sourceItem">
+            <div className="sourceNumber">{i + 1}</div>
+            <div className="sourceContent">
+              <div className="sourceName">{s.source}</div>
+              <div className="sourceScore">
+                Relevance: {(Number(s.score || 0) * 100).toFixed(0)}%
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -74,28 +100,163 @@ function EvaluationSummary({ ragasScore, judgeScore, evaluationScores }) {
   );
 }
 
+function parseMarkdownText(text) {
+  if (!text) return null;
+  
+  const elements = [];
+  let key = 0;
+  
+  const lines = text.split('\n');
+  let i = 0;
+  
+  while (i < lines.length) {
+    const line = lines[i].trim();
+    
+    if (!line) {
+      i++;
+      continue;
+    }
+    
+    if (line.match(/^[-•*]\s/)) {
+      const listItems = [];
+      while (i < lines.length) {
+        const currentLine = lines[i].trim();
+        if (currentLine.match(/^[-•*]\s/)) {
+          const itemText = currentLine.replace(/^[-•*]\s+/, '');
+          listItems.push(itemText);
+          i++;
+        }
+        else if (!currentLine) {
+          i++;
+        }
+        else {
+          break;
+        }
+      }
+      elements.push(
+        <ol key={key++} className="responseList">
+          {listItems.map((item, idx) => (
+            <li key={idx}>{formatInlineMarkdown(item)}</li>
+          ))}
+        </ol>
+      );
+      continue;
+    }
+    
+    if (line.match(/^\d+\.\s/)) {
+      const listItems = [];
+      while (i < lines.length) {
+        const currentLine = lines[i].trim();
+        if (currentLine.match(/^\d+\.\s/)) {
+          const itemText = currentLine.replace(/^\d+\.\s+/, '');
+          listItems.push(itemText);
+          i++;
+        }
+        else if (!currentLine) {
+          i++;
+        }
+        else {
+          break;
+        }
+      }
+      elements.push(
+        <ol key={key++} className="responseList">
+          {listItems.map((item, idx) => (
+            <li key={idx}>{formatInlineMarkdown(item)}</li>
+          ))}
+        </ol>
+      );
+      continue;
+    }
+    
+    let paragraph = line;
+    i++;
+    while (i < lines.length && lines[i].trim() && !lines[i].trim().match(/^[-•*]\s/) && !lines[i].trim().match(/^\d+\.\s/)) {
+      paragraph += ' ' + lines[i].trim();
+      i++;
+    }
+    
+    elements.push(
+      <p key={key++} className="responseParagraph">
+        {formatInlineMarkdown(paragraph)}
+      </p>
+    );
+  }
+  
+  return elements;
+}
+
+function formatInlineMarkdown(text) {
+  if (!text) return text;
+  
+  const parts = [];
+  let currentIndex = 0;
+  let key = 0;
+  
+  const regex = /(\*\*(.+?)\*\*|`([^`]+?)`)/g;
+  let match;
+  
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > currentIndex) {
+      parts.push(text.substring(currentIndex, match.index));
+    }
+    
+    if (match[2] !== undefined) {
+      parts.push(
+        <strong key={`bold-${key++}`} className="boldText">
+          {match[2]}
+        </strong>
+      );
+    }
+    else if (match[3] !== undefined) {
+      parts.push(
+        <code key={`code-${key++}`} className="inlineCode">
+          {match[3]}
+        </code>
+      );
+    }
+    
+    currentIndex = match.index + match[0].length;
+  }
+  
+  if (currentIndex < text.length) {
+    parts.push(text.substring(currentIndex));
+  }
+  
+  return parts.length > 0 ? parts : text;
+}
+
 function ChatMessage({ role, content, sources, filePreviewUrl, fileName, image_base64, messageId, ragas_score, judge_score, evaluation_scores, onFeedback }) {
   const imgSrc = image_base64
     ? `data:image/jpeg;base64,${image_base64}`
     : filePreviewUrl;
   return (
     <div className={`msg ${role}`}>
-      {role === 'assistant' && <div className="botName">Zill</div>}
+      {role === 'assistant' && (
+        <div className="botHeader">
+          <div className="botName">Zill Assistant</div>
+        </div>
+      )}
       <div className={`messageStack ${role}`} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
         {imgSrc && (
-          <img
-            className="chatImagePreview"
-            src={imgSrc}
-            alt={fileName || 'uploaded image'}
-            style={{ display: 'block' }}
-          />
+          <div className="imagePreviewContainer">
+            <img
+              className="chatImagePreview"
+              src={imgSrc}
+              alt={fileName || 'uploaded image'}
+              style={{ display: 'block' }}
+            />
+            {fileName && <div className="imageCaption">{fileName}</div>}
+          </div>
         )}
         {content && (
           <div
             className="bubble"
             style={{ margin: 0 }}
           >
-            <p style={{ margin: 0 }}>{content}</p>
+            <div className="responseContent">
+              {role === 'assistant' ? parseMarkdownText(content) : <p className="responseParagraph">{content}</p>}
+            </div>
           </div>
         )}
         {role === 'assistant' ? (

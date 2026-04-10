@@ -3,7 +3,7 @@ import { useTheme } from './context/ThemeContext';
 
 const API_BASE = '/api';
 const SUPPORTED = '.txt,.md,.pdf,.doc,.docx,.csv,.png,.jpg,.jpeg,.webp';
-const MAX_UPLOAD_SIZE_MB = 30;
+const MAX_UPLOAD_SIZE_MB = 100;
 
 async function readApiResponse(res) {
   const contentType = res.headers.get('content-type') || '';
@@ -24,9 +24,7 @@ export default function Admin() {
   const [uploadOpen, setUploadOpen] = useState(false)
   const [uploading, setUploading] = useState(false);
   const [uploadResults, setUploadResults] = useState([]);
-  const [loginUsername, setLoginUsername] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
-  const [authError, setAuthError] = useState('');
+
   const [notification, setNotification] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
   const [settings, setSettings] = useState({
@@ -114,37 +112,8 @@ export default function Admin() {
     setToken(null);
     setUsername('');
     setIsAdmin(false);
-  }
-
-  async function handleLogin() {
-    setAuthError('');
-    try {
-      const res = await fetch(`${API_BASE}/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: loginUsername, password: loginPassword }),
-      });
-      const data = await readApiResponse(res);
-      if (!res.ok) throw new Error(data.detail || 'Login failed');
-
-      if (!data.is_admin) {
-        setAuthError('Admin access required');
-        return;
-      }
-
-      localStorage.setItem('token', data.access_token);
-      localStorage.setItem('username', data.username);
-      localStorage.setItem('is_admin', 'true');
-      setToken(data.access_token);
-      setUsername(data.username);
-      setLoginUsername('');
-      setLoginPassword('');
-
-      // Redirect to admin panel after successful login
-      window.location.href = '/admin';
-    } catch (err) {
-      setAuthError(String(err.message || err));
-    }
+    window.history.pushState({}, '', '/');
+    window.dispatchEvent(new Event('navigate'));
   }
 
   async function loadFiles() {
@@ -351,48 +320,9 @@ export default function Admin() {
   }
 
   if (!token || !isAdmin) {
-    return (
-      <div className="loginPage">
-        <div className="loginCard">
-          <h1>
-            <span className="emoji">🔐</span>
-            <span className="gradientText"> Admin Panel</span>
-          </h1>
-          <p>Sign in as Admin</p>
-
-          {authError && <div className="authError">{authError}</div>}
-
-          <input
-            type="text"
-            placeholder="Admin Username"
-            value={loginUsername}
-            onChange={(e) => setLoginUsername(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
-          />
-          <input
-            type="password"
-            placeholder="Admin Password"
-            value={loginPassword}
-            onChange={(e) => setLoginPassword(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
-          />
-
-          <button onClick={handleLogin} className="authBtn">Sign in as Admin</button>
-
-          <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid #2a2a2a' }}>
-            <button
-              onClick={() => {
-                window.history.pushState({}, '', '/');
-                window.dispatchEvent(new Event('navigate'));
-              }}
-              className="toggleAuthBtn"
-            >
-              ← Back to User Login
-            </button>
-          </div>
-        </div>
-      </div>
-    );
+    window.history.pushState({}, '', '/');
+    window.dispatchEvent(new Event('navigate'));
+    return null;
   }
 
   return (

@@ -222,32 +222,6 @@ body {
   gap: 8px;
 }
 
-.navBtn {
-  width: 100%;
-  padding: 12px;
-  background: var(--bg-gradient-secondary);
-  border: 1px solid var(--border-secondary);
-  color: var(--text-primary);
-  border-radius: 10px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  transition: all 0.2s;
-  box-shadow: var(--shadow-sm);
-  margin-bottom: 4px;
-}
-
-.navBtn:hover {
-  background: var(--bg-gradient-tertiary);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
-}
-
-.navBtn.active {
-  background: var(--bg-gradient-button);
-  color: var(--button-text);
-  border-color: var(--text-primary);
-}
 
 .userInfo {
   display: flex;
@@ -609,7 +583,7 @@ body {
   margin: 0 !important;
   padding-left: 28px !important;
   line-height: 1.8;
-  list-style-type: decimal !important;
+  list-style-type: disc !important;
   list-style-position: outside !important;
 }
 
@@ -617,6 +591,14 @@ body {
   margin-bottom: 8px;
   padding-left: 8px;
   display: list-item !important;
+  list-style-type: disc !important;
+}
+
+ol.responseList {
+  list-style-type: decimal !important;
+}
+
+ol.responseList li {
   list-style-type: decimal !important;
 }
 

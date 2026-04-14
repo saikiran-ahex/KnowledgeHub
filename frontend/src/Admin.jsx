@@ -3,7 +3,6 @@ import { useTheme } from './context/ThemeContext';
 
 const API_BASE = '/api';
 const SUPPORTED = '.txt,.md,.pdf,.doc,.docx,.csv,.png,.jpg,.jpeg,.webp';
-const MAX_UPLOAD_SIZE_MB = 30;
 
 async function readApiResponse(res) {
   const contentType = res.headers.get('content-type') || '';
@@ -19,7 +18,7 @@ export default function Admin() {
   const { theme, toggleTheme } = useTheme();
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [username, setUsername] = useState(localStorage.getItem('username') || '');
-  const [isAdmin, setIsAdmin] = useState(localStorage.getItem('is_admin') === 'true');
+  const [isAdmin] = useState(localStorage.getItem('is_admin') === 'true');
   const [files, setFiles] = useState([]);
   const [uploadOpen, setUploadOpen] = useState(false)
   const [uploading, setUploading] = useState(false);
@@ -40,7 +39,6 @@ export default function Admin() {
     { value: 'nemotron-nano', label: 'Nemotron Nano VL (Free)' },
     ]);
   const [evaluationBusy, setEvaluationBusy] = useState(false);
-  const [evaluationDatasetPath, setEvaluationDatasetPath] = useState('eval/sample_ragas_eval.jsonl');
   const [evaluationResult, setEvaluationResult] = useState(null);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [reviewQueue, setReviewQueue] = useState([]);
@@ -113,7 +111,6 @@ export default function Admin() {
     localStorage.removeItem('is_admin');
     setToken(null);
     setUsername('');
-    setIsAdmin(false);
   }
 
   async function handleLogin() {
@@ -260,9 +257,7 @@ export default function Admin() {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          dataset_path: evaluationDatasetPath.trim() || null,
-        }),
+        body: JSON.stringify({ dataset_path: null }),
       });
       const data = await readApiResponse(res);
       if (!res.ok) throw new Error(data.detail || 'Evaluation failed');

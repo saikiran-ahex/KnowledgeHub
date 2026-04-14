@@ -6,7 +6,6 @@ import { useTheme } from './context/ThemeContext';
 
 const API_BASE = '/api';
 const SUPPORTED = '.txt,.md,.pdf,.doc,.docx,.csv,.png,.jpg,.jpeg,.webp';
-const MAX_UPLOAD_SIZE_MB = 30;
 const DEFAULT_IMAGE_MODELS = [
   { value: 'gpt-5-mini', label: 'GPT-5 Mini' },
   { value: 'gpt-4.1-mini', label: 'GPT-4.1 Mini' },
@@ -134,11 +133,11 @@ function parseMarkdownText(text) {
         }
       }
       elements.push(
-        <ol key={key++} className="responseList">
+        <ul key={key++} className="responseList">
           {listItems.map((item, idx) => (
             <li key={idx}>{formatInlineMarkdown(item)}</li>
           ))}
-        </ol>
+        </ul>
       );
       continue;
     }
@@ -237,7 +236,7 @@ function ChatMessage({ role, content, sources, filePreviewUrl, fileName, image_b
           <div className="botName">Zill Assistant</div>
         </div>
       )}
-      <div className={`messageStack ${role}`} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+      <div className={`messageStack ${role}`}>
         {imgSrc && (
           <div className="imagePreviewContainer">
             <img
@@ -250,10 +249,7 @@ function ChatMessage({ role, content, sources, filePreviewUrl, fileName, image_b
           </div>
         )}
         {content && (
-          <div
-            className="bubble"
-            style={{ margin: 0 }}
-          >
+          <div className="bubble">
             <div className="responseContent">
               {role === 'assistant' ? parseMarkdownText(content) : <p className="responseParagraph">{content}</p>}
             </div>
@@ -277,29 +273,17 @@ function ChatMessage({ role, content, sources, filePreviewUrl, fileName, image_b
 
 export default function App() {
   const [isAdminRoute, setIsAdminRoute] = useState(window.location.pathname === '/admin');
-  const [isAdmin, setIsAdmin] = useState(localStorage.getItem('is_admin') === 'true');
 
   useEffect(() => {
     const handleLocationChange = () => {
       setIsAdminRoute(window.location.pathname === '/admin');
-      setIsAdmin(localStorage.getItem('is_admin') === 'true');
     };
-
     window.addEventListener('popstate', handleLocationChange);
-
-    // Listen for custom navigation events
     window.addEventListener('navigate', handleLocationChange);
-
     return () => {
       window.removeEventListener('popstate', handleLocationChange);
       window.removeEventListener('navigate', handleLocationChange);
     };
-  }, []);
-
-  // Check route on mount and when localStorage changes
-  useEffect(() => {
-    setIsAdminRoute(window.location.pathname === '/admin');
-    setIsAdmin(localStorage.getItem('is_admin') === 'true');
   }, []);
 
   if (isAdminRoute) {
@@ -334,7 +318,7 @@ function ChatApp() {
   const liveTranscriptRef = useRef('');
   const pendingSendAfterListeningRef = useRef(false);
   const pendingSendTextRef = useRef('');
-  const { theme, toggleTheme } = useTheme();
+  const { toggleTheme } = useTheme();
 
   const currentChat = chats.find((c) => c.id === activeChat) || chats[0];
   const history = currentChat.messages;

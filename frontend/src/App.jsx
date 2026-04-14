@@ -6,6 +6,7 @@ import { useTheme } from './context/ThemeContext';
 
 const API_BASE = '/api';
 const SUPPORTED = '.txt,.md,.pdf,.doc,.docx,.csv,.png,.jpg,.jpeg,.webp';
+const MAX_UPLOAD_SIZE_MB = 100;
 const DEFAULT_IMAGE_MODELS = [
   { value: 'gpt-5-mini', label: 'GPT-5 Mini' },
   { value: 'gpt-4.1-mini', label: 'GPT-4.1 Mini' },
@@ -464,10 +465,15 @@ function ChatApp() {
       localStorage.setItem('token', data.access_token);
       localStorage.setItem('username', data.username);
       localStorage.setItem('is_admin', data.is_admin ? 'true' : 'false');
-      setToken(data.access_token);
-      setUsername(data.username);
       setLoginUsername('');
       setLoginPassword('');
+      if (data.is_admin) {
+        window.history.pushState({}, '', '/admin');
+        window.dispatchEvent(new Event('navigate'));
+        return;
+      }
+      setToken(data.access_token);
+      setUsername(data.username);
     } catch (err) {
       setAuthError(String(err.message || err));
     }
@@ -717,19 +723,6 @@ function ChatApp() {
           <button onClick={() => setIsRegister(!isRegister)} className="toggleAuthBtn">
             {isRegister ? 'Already have an account? Login' : "Don't have an account? Register"}
           </button>
-
-          <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid #2a2a2a' }}>
-            <button
-              onClick={() => {
-                window.history.pushState({}, '', '/admin');
-                window.dispatchEvent(new Event('navigate'));
-              }}
-              className="toggleAuthBtn"
-              style={{ marginTop: '0' }}
-            >
-              🔐 Login as Admin
-            </button>
-          </div>
         </div>
       </div>
     );

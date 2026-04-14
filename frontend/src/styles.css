@@ -594,12 +594,12 @@ body {
   list-style-type: disc !important;
 }
 
-ol.responseList {
-  list-style-type: decimal !important;
+ul.responseList {
+  list-style-type: disc !important;
 }
 
-ol.responseList li {
-  list-style-type: decimal !important;
+ul.responseList li {
+  list-style-type: disc !important;
 }
 
 .responseList li:last-child {

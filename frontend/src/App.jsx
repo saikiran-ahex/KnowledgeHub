@@ -160,11 +160,11 @@ function parseMarkdownText(text) {
         }
       }
       elements.push(
-        <ol key={key++} className="responseList">
+        <ul key={key++} className="responseList">
           {listItems.map((item, idx) => (
             <li key={idx}>{formatInlineMarkdown(item)}</li>
           ))}
-        </ol>
+        </ul>
       );
       continue;
     }
